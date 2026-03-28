@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Notes Hub — AI Notes Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --bg: #07070a;
+      --card: #0f1115;
+      --muted: #9aa4b2;
+      --accent: #7c5cff;
+      --accent-glow: rgba(124, 92, 255, 0.6);
+      --glass: rgba(255, 255, 255, 0.03);
+      --success: #00d9a6;
+      --danger: #ff5c8d;
+      --warning: #ffb84d;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      font-family: 'Poppins', system-ui, Segoe UI, Roboto, Arial;
+      background: radial-gradient(900px 400px at 8% 12%, rgba(124, 92, 255, 0.12), transparent),
+                  radial-gradient(700px 350px at 92% 88%, rgba(0, 180, 255, 0.05), transparent),
+                  var(--bg);
+      color: #e6eef8;
+      overflow-x: hidden;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1400px;
+      margin: 28px auto;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    header {
+      position: fixed;
+      left: 20px;
+      top: 18px;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    header h1 {
+      font-family: 'Montserrat';
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    /* Left: 3D-style floating robot */
+    .robot-panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .robot-card {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 18px;
+      border-radius: 16px;
+      backdrop-filter: blur(6px);
+    }
+    .robot-stage {
+      height: 340px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .robot-3d {
+      width: 220px;
+      height: 260px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: translateZ(0);
+      animation: robotRotate 8s ease-in-out infinite;
+    }
+    @keyframes robotRotate {
+      0% { transform: rotateY(0) translateY(0); }
+      50% { transform: rotateY(12deg) translateY(-8px); }
+      100% { transform: rotateY(0) translateY(0); }
+    }
+    .robot-shell {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 220px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, var(--accent), #00b4ff);
+      box-shadow: 0 20px 60px rgba(124, 92, 255, 0.14);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      transition: all 0.3s ease;
+    }
+    .robot-shell.listening {
+      box-shadow: 0 0 30px var(--accent-glow);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 10px var(--accent-glow); }
+      50% { box-shadow: 0 0 30px var(--accent-glow); }
+      100% { box-shadow: 0 0 10px var(--accent-glow); }
+    }
+    .robot-shell .visor {
+      width: 120px;
+      height: 34px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .robot-shell .visor .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #071022;
+      box-shadow: 0 0 14px rgba(255, 255, 255, 0.25);
+    }
+    .robot-shell .chest {
+      width: 140px;
+      height: 60px;
+      margin-top: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .robot-shadow {
+      width: 160px;
+      height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(2, 6, 23, 0.5), transparent);
+      filter: blur(6px);
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+
+    /* Notes Generator Panel */
+    .notes-generator {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      position: relative;
+      overflow: hidden;
+    }
+    .notes-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .notes-header h2 {
+      font-family: 'Montserrat';
+      margin: 0;
+      font-size: 1.4rem;
+    }
+    .notes-controls {
+      display: flex;
+      gap: 10px;
+    }
+    .notes-controls button {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(90deg, var(--accent), #00b4ff);
+      color: #071022;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .notes-controls button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    .notes-controls button:active {
+      transform: translateY(0);
+    }
+    .notes-controls button.secondary {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--muted);
+    }
+
+    /* Notes Sections */
+    .notes-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    .notes-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.3s ease;
+    }
+    .notes-section:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .section-header h3 {
+      font-family: 'Montserrat';
+      font-size: 1.1rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-toggle {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .section-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    .form-group label {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.3);
+      color: inherit;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.2);
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    .add-item {
+      background: transparent;
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      color: var(--muted);
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+      transition: all 0.3s ease;
+    }
+    .add-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .item-container {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .item-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .item-row input {
+      flex: 1;
+    }
+    .remove-item {
+      background: transparent;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    /* Notes Output Panel */
+    .notes-output {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--card);
+      z-index: 10;
+      padding: 24px;
+      overflow-y: auto;
+      display: none;
+    }
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .output-content {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 400px;
+      color: #e6eef8;
+      line-height: 1.6;
+    }
+    .output-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    /* Chat area */
+    .chat-card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      position: relative;
+    }
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .chat-header h3 {
+      margin: 0;
+      font-family: 'Montserrat';
+    }
+    .chat-body {
+      flex: 1;
+      overflow: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      line-height: 1.4;
+      box-shadow: 0 6px 20px rgba(2, 6, 23, 0.5);
+      animation: bubbleAppear 0.3s ease-out;
+    }
+    @keyframes bubbleAppear {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .bubble.bot {
+      align-self: flex-start;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      color: #dbeafe;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(90deg, var(--accent), #00b4ff);
+      color: #071022;
+    }
+    .meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .typing {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #cfe6ff;
+      opacity: 0.85;
+      animation: blink 1s infinite;
+    }
+    .dot:nth-child(2) {
+      animation-delay: 0.16s;
+    }
+    .dot:nth-child(3) {
+      animation-delay: 0.32s;
+    }
+    @keyframes blink {
+      0% { transform: translateY(0); opacity: 0.4; }
+      50% { transform: translateY(-6px); opacity: 1; }
+      100% { transform: translateY(0); opacity: 0.4; }
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: transparent;
+      color: inherit;
+      transition: all 0.3s ease;
+    }
+    .chat-input input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.2);
+    }
+    .chat-input button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(90deg, var(--accent), #00b4ff);
+      color: #071022;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .chat-input button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    .chat-input button:active {
+      transform: translateY(0);
+    }
+
+    /* Voice button with pulse animation */
+    #voice-btn {
+      position: relative;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    #voice-btn.active {
+      color: var(--success);
+      border-color: var(--success);
+    }
+    #voice-btn.active::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      background: var(--success);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: voicePulse 1.5s infinite;
+      z-index: -1;
+    }
+    @keyframes voicePulse {
+      0% {
+        width: 0;
+        height: 0;
+        opacity: 0.7;
+      }
+      100% {
+        width: 150%;
+        height: 150%;
+        opacity: 0;
+      }
+    }
+
+    /* Customizer & back */
+    .top-controls {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .back {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 8px 10px;
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .back:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Settings panel */
+    .settings-panel {
+      position: absolute;
+      top: 60px;
+      right: 18px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      width: 280px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      animation: neonGlass 0.4s ease-out;
+    }
+    @keyframes neonGlass {
+      0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .settings-panel h4 {
+      margin-bottom: 12px;
+      font-family: 'Montserrat';
+      color: #fff;
+    }
+    .settings-group {
+      margin-bottom: 16px;
+    }
+    .settings-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .settings-group select, .settings-group input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.3);
+      color: inherit;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .checkbox-group input {
+      width: auto;
+    }
+
+    /* Small footer */
+    .assistant-footer {
+      margin-top: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* Blobs + particles behind */
+    .blobs {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .blob {
+      position: absolute;
+      filter: blur(44px);
+      opacity: 0.85;
+      border-radius: 50%;
+      mix-blend-mode: screen;
+    }
+    .blob.b1 {
+      width: 420px;
+      height: 420px;
+      left: -120px;
+      top: -120px;
+      background: linear-gradient(135deg, var(--accent), #2dd4bf);
+    }
+    .blob.b2 {
+      width: 380px;
+      height: 380px;
+      right: -80px;
+      bottom: -80px;
+      background: linear-gradient(135deg, #00b4ff, #7c5cff);
+    }
+    canvas#particles {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+      opacity: 0.12;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px) {
+      .container {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+      .robot-stage {
+        height: 240px;
+      }
+      .chat-card, .notes-generator {
+        height: 520px;
+      }
+      .settings-panel {
+        width: 90%;
+        right: 5%;
+      }
+      .section-content {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+  </div>
+  <canvas id="particles"></canvas>
+
+  <header>
+    <div class="logo"><i class="fas fa-sticky-note" style="color:var(--accent)"></i><h1>AI Notes Generator</h1></div>
+  </header>
+
+  <div class="container">
+    <aside class="robot-panel">
+      <div class="robot-card">
+        <div class="robot-stage">
+          <div class="robot-3d" aria-hidden>
+            <div class="robot-shell">
+              <div class="visor"><div class="dot"></div></div>
+              <div class="chest"><div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.08)"></div><div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.06)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="robot-shadow" aria-hidden></div>
+      </div>
+      <div style="width:100%;text-align:center;margin-top:8px">
+        <strong style="color:#fff">Astra — Notes Assistant</strong>
+        <div style="color:var(--muted);font-size:0.9rem;margin-top:6px">AI-powered lecture summarization & note generation</div>
+      </div>
+    </aside>
+
+    <main class="notes-generator" role="main">
+      <div class="notes-header">
+        <h2>Notes Generator</h2>
+        <div class="notes-controls">
+          <button id="generate-btn"><i class="fas fa-magic"></i> Generate Notes</button>
+          <button id="save-btn"><i class="fas fa-download"></i> Save</button>
+          <button class="secondary" id="templates-btn"><i class="fas fa-palette"></i> Templates</button>
+          <button class="back" onclick="go('index.html')"><i class="fas fa-arrow-left"></i> Home</button>
+        </div>
+      </div>
+
+      <div class="notes-sections">
+        <!-- Lecture Input -->
+        <div class="notes-section">
+          <div class="section-header">
+            <h3><i class="fas fa-chalkboard-teacher"></i> Lecture Input</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="form-group">
+              <label for="lecture-title">Lecture Title</label>
+              <input type="text" id="lecture-title" placeholder="Introduction to Machine Learning">
+            </div>
+            <div class="form-group">
+              <label for="lecture-subject">Subject</label>
+              <select id="lecture-subject">
+                <option value="">Select a subject</option>
+                <option value="computer-science">Computer Science</option>
+                <option value="mathematics">Mathematics</option>
+                <option value="physics">Physics</option>
+                <option value="biology">Biology</option>
+                <option value="chemistry">Chemistry</option>
+                <option value="engineering">Engineering</option>
+                <option value="business">Business</option>
+                <option value="history">History</option>
+                <option value="literature">Literature</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group full-width">
+              <label for="lecture-content">Lecture Content / Transcript</label>
+              <textarea id="lecture-content" placeholder="Paste your lecture transcript, upload audio, or record directly..."></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label for="key-concepts">Key Concepts (optional)</label>
+              <textarea id="key-concepts" placeholder="List important concepts, terms, or topics covered..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Note Preferences -->
+        <div class="notes-section">
+          <div class="section-header">
+            <h3><i class="fas fa-cog"></i> Note Preferences</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="form-group">
+              <label for="note-style">Note Style</label>
+              <select id="note-style">
+                <option value="bullet">Bullet Points</option>
+                <option value="outline">Outline Format</option>
+                <option value="cornell">Cornell Notes</option>
+                <option value="mindmap">Mind Map</option>
+                <option value="summary">Summary Format</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="detail-level">Detail Level</label>
+              <select id="detail-level">
+                <option value="concise">Concise</option>
+                <option value="balanced" selected>Balanced</option>
+                <option value="detailed">Detailed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="language">Language</label>
+              <select id="language">
+                <option value="english">English</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+                <option value="chinese">Chinese</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="target-audience">Target Audience</label>
+              <select id="target-audience">
+                <option value="student">Student</option>
+                <option value="researcher">Researcher</option>
+                <option value="professional">Professional</option>
+                <option value="general">General Public</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Features -->
+        <div class="notes-section">
+          <div class="section-header">
+            <h3><i class="fas fa-plus-circle"></i> Additional Features</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="form-group full-width">
+              <div class="checkbox-group">
+                <input type="checkbox" id="include-definitions" checked>
+                <label for="include-definitions">Include key definitions</label>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="include-examples" checked>
+                <label for="include-examples">Include examples</label>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="include-quiz" checked>
+                <label for="include-quiz">Generate quiz questions</label>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="highlight-important" checked>
+                <label for="highlight-important">Highlight important points</label>
+              </div>
+              <div class="checkbox-group">
+                <input type="checkbox" id="add-visuals">
+                <label for="add-visuals">Suggest visual aids</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Input -->
+        <div class="notes-section">
+          <div class="section-header">
+            <h3><i class="fas fa-microphone"></i> Audio Input</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="form-group full-width">
+              <label>Record or Upload Audio</label>
+              <div style="display: flex; gap: 10px; margin-top: 8px;">
+                <button id="record-btn" class="secondary" style="flex: 1;"><i class="fas fa-microphone"></i> Record</button>
+                <button id="upload-btn" class="secondary" style="flex: 1;"><i class="fas fa-upload"></i> Upload Audio</button>
+              </div>
+              <div id="audio-status" style="margin-top: 8px; font-size: 0.8rem; color: var(--muted);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes Output Panel -->
+      <div class="notes-output" id="notes-output">
+        <div class="output-header">
+          <h2>Generated Notes</h2>
+          <button class="output-close" id="output-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="output-content" id="output-content">
+          <!-- Generated notes will appear here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Particles background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    
+    function resize() {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+    }
+    
+    addEventListener('resize', resize);
+    resize();
+    
+    const particles = [];
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.6 + 0.4,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25
+      });
+    }
+    
+    function tick() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(180, 200, 255, 0.03)';
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    // Notes Generator Functionality
+    const generateBtn = document.getElementById('generate-btn');
+    const saveBtn = document.getElementById('save-btn');
+    const templatesBtn = document.getElementById('templates-btn');
+    const notesOutput = document.getElementById('notes-output');
+    const outputClose = document.getElementById('output-close');
+    const outputContent = document.getElementById('output-content');
+    const robotShell = document.querySelector('.robot-shell');
+    const recordBtn = document.getElementById('record-btn');
+    const uploadBtn = document.getElementById('upload-btn');
+    const audioStatus = document.getElementById('audio-status');
+    
+    // Toggle section content
+    document.querySelectorAll('.section-toggle').forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        const section = e.target.closest('.notes-section');
+        const content = section.querySelector('.section-content');
+        const icon = section.querySelector('.section-toggle i');
+        
+        if (content.style.display === 'none') {
+          content.style.display = 'grid';
+          icon.className = 'fas fa-chevron-down';
+        } else {
+          content.style.display = 'none';
+          icon.className = 'fas fa-chevron-right';
+        }
+      });
+    });
+    
+    // Generate notes functionality
+    generateBtn.addEventListener('click', () => {
+      const lectureTitle = document.getElementById('lecture-title').value || 'Untitled Lecture';
+      const lectureContent = document.getElementById('lecture-content').value;
+      const keyConcepts = document.getElementById('key-concepts').value;
+      const noteStyle = document.getElementById('note-style').value;
+      const detailLevel = document.getElementById('detail-level').value;
+      const subject = document.getElementById('lecture-subject').value;
+      
+      if (!lectureContent) {
+        alert('Please enter some lecture content to generate notes.');
+        return;
+      }
+      
+      // Show loading state
+      outputContent.innerHTML = '<div class="typing" style="justify-content: center; margin: 40px 0;"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><p style="text-align: center; color: var(--muted);">Generating your notes...</p>';
+      notesOutput.style.display = 'block';
+      
+      // Simulate AI processing
+      setTimeout(() => {
+        generateNotes(lectureTitle, lectureContent, keyConcepts, noteStyle, detailLevel, subject);
+      }, 1500);
+      
+      // Animate robot
+      animateRobot();
+    });
+    
+    // Close output panel
+    outputClose.addEventListener('click', () => {
+      notesOutput.style.display = 'none';
+    });
+    
+    // Save functionality
+    saveBtn.addEventListener('click', () => {
+      const notesText = outputContent.innerText;
+      if (!notesText || notesText.includes('Generating your notes')) {
+        alert('Please generate notes first before saving.');
+        return;
+      }
+      
+      const blob = new Blob([notesText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'generated-notes.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Show success message
+      const originalText = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+      setTimeout(() => {
+        saveBtn.innerHTML = originalText;
+      }, 2000);
+    });
+    
+    // Record audio functionality
+    let mediaRecorder;
+    let audioChunks = [];
+    
+    recordBtn.addEventListener('click', async () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        // Stop recording
+        mediaRecorder.stop();
+        recordBtn.innerHTML = '<i class="fas fa-microphone"></i> Record';
+        audioStatus.textContent = 'Recording stopped. Processing...';
+      } else {
+        // Start recording
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+          
+          mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+          };
+          
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            // In a real app, you would send this to a speech-to-text API
+            audioStatus.textContent = 'Audio recorded. (Note: Speech-to-text would be implemented with an API)';
+          };
+          
+          mediaRecorder.start();
+          recordBtn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+          audioStatus.textContent = 'Recording... Speak now.';
+        } catch (err) {
+          console.error('Error accessing microphone:', err);
+          audioStatus.textContent = 'Error accessing microphone. Please check permissions.';
+        }
+      }
+    });
+    
+    // Upload audio functionality
+    uploadBtn.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'audio/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          audioStatus.textContent = `File "${file.name}" selected. (Note: Processing would require an API)`;
+        }
+      };
+      input.click();
+    });
+    
+    // Generate notes based on input
+    function generateNotes(title, content, concepts, style, detail, subject) {
+      // This is a simplified simulation - in a real app, this would call an AI API
+      let notes = '';
+      
+      // Header
+      notes += `# ${title}\n\n`;
+      notes += `*Generated with Astra Notes Assistant*\n\n`;
+      
+      // Summary section
+      notes += `## Summary\n\n`;
+      notes += generateSummary(content, detail);
+      notes += `\n\n`;
+      
+      // Key concepts
+      if (concepts) {
+        notes += `## Key Concepts\n\n`;
+        const conceptList = concepts.split(',').map(c => c.trim()).filter(c => c);
+        conceptList.forEach(concept => {
+          notes += `- **${concept}**: ${generateDefinition(concept, subject)}\n`;
+        });
+        notes += `\n\n`;
+      }
+      
+      // Main content based on note style
+      notes += `## Detailed Notes\n\n`;
+      switch(style) {
+        case 'bullet':
+          notes += generateBulletPoints(content, detail);
+          break;
+        case 'outline':
+          notes += generateOutline(content, detail);
+          break;
+        case 'cornell':
+          notes += generateCornellNotes(content, detail);
+          break;
+        case 'mindmap':
+          notes += generateMindMap(content, detail);
+          break;
+        case 'summary':
+          notes += generateSummaryFormat(content, detail);
+          break;
+      }
+      
+      // Quiz questions if enabled
+      if (document.getElementById('include-quiz').checked) {
+        notes += `\n\n## Review Questions\n\n`;
+        notes += generateQuizQuestions(content);
+      }
+      
+      // Display the notes
+      outputContent.innerHTML = formatNotesForDisplay(notes);
+    }
+    
+    // Helper functions for note generation
+    function generateSummary(content, detail) {
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let summaryLength = detail === 'concise' ? 2 : detail === 'detailed' ? 5 : 3;
+      summaryLength = Math.min(summaryLength, sentences.length);
+      
+      return sentences.slice(0, summaryLength).map(s => `- ${s.trim()}.`).join('\n');
+    }
+    
+    function generateDefinition(concept, subject) {
+      // Mock definitions - in a real app, these would come from an AI or knowledge base
+      const definitions = {
+        'machine learning': 'A subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed.',
+        'algorithm': 'A set of rules or instructions designed to solve a specific problem or perform a computation.',
+        'neural network': 'A computing system inspired by the human brain that consists of interconnected nodes (neurons) organized in layers.',
+        'data structure': 'A specialized format for organizing, processing, retrieving and storing data.',
+        'variable': 'A symbolic name associated with a value and whose associated value may be changed.',
+        'function': 'A block of organized, reusable code that is used to perform a single, related action.'
+      };
+      
+      return definitions[concept.toLowerCase()] || 'Important concept discussed in the lecture.';
+    }
+    
+    function generateBulletPoints(content, detail) {
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let points = detail === 'concise' ? 5 : detail === 'detailed' ? 15 : 10;
+      points = Math.min(points, sentences.length);
+      
+      return sentences.slice(0, points).map(s => `- ${s.trim()}.`).join('\n');
+    }
+    
+    function generateOutline(content, detail) {
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let mainPoints = detail === 'concise' ? 3 : detail === 'detailed' ? 6 : 4;
+      mainPoints = Math.min(mainPoints, Math.ceil(sentences.length / 3));
+      
+      let outline = '';
+      for (let i = 0; i < mainPoints; i++) {
+        outline += `${i+1}. Main Point ${i+1}\n`;
+        const subPoints = Math.min(2, Math.ceil(sentences.length / mainPoints));
+        for (let j = 0; j < subPoints; j++) {
+          outline += `   ${String.fromCharCode(97+j)}. ${sentences[i*subPoints + j] || 'Supporting detail'}\n`;
+        }
+        outline += '\n';
+      }
+      
+      return outline;
+    }
+    
+    function generateCornellNotes(content, detail) {
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let points = detail === 'concise' ? 4 : detail === 'detailed' ? 8 : 6;
+      points = Math.min(points, sentences.length);
+      
+      let notes = '**Cues/Questions** | **Notes**\n';
+      notes += '--- | ---\n';
+      
+      for (let i = 0; i < points; i++) {
+        const sentence = sentences[i].trim();
+        const question = `What is ${sentence.split(' ').slice(0, 3).join(' ')}...?`;
+        notes += `${question} | ${sentence}.\n`;
+      }
+      
+      return notes;
+    }
+    
+    function generateMindMap(content, detail) {
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let centralIdea = sentences[0] || 'Main Topic';
+      if (centralIdea.length > 30) centralIdea = centralIdea.substring(0, 30) + '...';
+      
+      let branches = detail === 'concise' ? 3 : detail === 'detailed' ? 5 : 4;
+      branches = Math.min(branches, sentences.length - 1);
+      
+      let mindmap = `Central Idea: **${centralIdea}**\n\n`;
+      mindmap += 'Branches:\n';
+      
+      for (let i = 1; i <= branches; i++) {
+        if (sentences[i]) {
+          mindmap += `- ${sentences[i].substring(0, 40)}${sentences[i].length > 40 ? '...' : ''}\n`;
+        }
+      }
+      
+      return mindmap;
+    }
+    
+    function generateSummaryFormat(content, detail) {
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      let summaryLength = detail === 'concise' ? 100 : detail === 'detailed' ? 300 : 200;
+      
+      let summary = '';
+      let currentLength = 0;
+      for (let sentence of sentences) {
+        if (currentLength + sentence.length > summaryLength) break;
+        summary += sentence.trim() + '. ';
+        currentLength += sentence.length;
+      }
+      
+      return summary;
+    }
+    
+    function generateQuizQuestions(content) {
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+      const questions = [
+        'What is the main topic discussed in this lecture?',
+        'List three key points from the lecture.',
+        'How would you explain the central concept to someone unfamiliar with the topic?',
+        'What are the practical applications of the concepts discussed?',
+        'What questions do you still have about this topic?'
+      ];
+      
+      return questions.map(q => `- ${q}`).join('\n');
+    }
+    
+    function formatNotesForDisplay(notes) {
+      // Convert markdown-like formatting to HTML
+      return notes
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/# (.*?)\n/g, '<h3>$1</h3>')
+        .replace(/## (.*?)\n/g, '<h4>$1</h4>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/^- (.*?)(?=\n|$)/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+        .replace(/\|/g, ' | ')
+        .replace(/--- \| ---/g, '<hr>');
+    }
+    
+    function animateRobot() {
+      robotShell.animate([
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-6px)' },
+        { transform: 'translateY(0)' }
+      ], {
+        duration: 500,
+        iterations: 1
+      });
+    }
+    
+    // Initialize with some sample content for demonstration
+    document.getElementById('lecture-title').value = 'Introduction to Machine Learning';
+    document.getElementById('lecture-content').value = 'Machine learning is a subset of artificial intelligence that focuses on the development of algorithms that can learn from and make predictions on data. These algorithms build a mathematical model based on sample data, known as training data, in order to make predictions or decisions without being explicitly programmed to perform the task. Machine learning algorithms are used in a wide variety of applications, such as email filtering, computer vision, and speech recognition, where it is difficult or infeasible to develop conventional algorithms to perform the needed tasks. A key part of machine learning is the representation of data. Features are individual measurable properties or characteristics of the phenomena being observed. The concept of feature selection is important, as it involves selecting a subset of relevant features for use in model construction. Feature extraction creates new features from functions of the original features.';
+    document.getElementById('key-concepts').value = 'machine learning, algorithm, neural network, training data, feature selection';
+
+
+        
+   // Go to page function
+function go(page) {
+  // Show confirmation before leaving
+  const confirmLeave = confirm('Are you sure you want to go back to home? Your resume data will be saved.');
+  if (confirmLeave) {
+    window.location.href = page;
+  }
+}
+  </script>
+</body>
+</html>

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Notes Hub — Study Materials</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root{--bg:#07070a;--card:#0f1115;--muted:#9aa4b2;--accent:#7c5cff;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;}
+    body{font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial;background:radial-gradient(1000px 500px at 10% 12%, rgba(124,92,255,0.12), transparent),radial-gradient(800px 400px at 92% 88%, rgba(0,180,255,0.05), transparent),var(--bg);color:#e6eef8;overflow-x:hidden}
+
+    /* page wrapper */
+    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px}
+
+    /* Header (compact) */
+    header{position:fixed;left:20px;top:18px;z-index:80;display:flex;align-items:center;gap:12px}
+    header .logo{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+    header h1{font-family:'Montserrat';font-size:1rem;margin:0}
+
+    /* Animated AI hero */
+    .hero-area{display:flex;align-items:center;gap:48px;z-index:10;margin-top:40px}
+    .ai-visual{width:360px;height:360px;display:grid;place-items:center;position:relative}
+
+    /* robot circle */
+    .bot-sphere{width:260px;height:260px;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);display:grid;place-items:center;backdrop-filter:blur(6px);box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+
+    /* stylized robot (SVG-like using CSS) */
+    .bot{width:140px;height:160px;position:relative;transform-origin:center;animation:botFloat 4s ease-in-out infinite}
+    @keyframes botFloat{0%{transform:translateY(0)}50%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+    .bot .head{width:110px;height:84px;background:linear-gradient(180deg,var(--accent),#00b4ff);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 6px 18px rgba(124,92,255,0.12)}
+    .bot .eye{width:56px;height:18px;background:rgba(255,255,255,0.92);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    .bot .eye .iris{width:10px;height:10px;background:#071022;border-radius:50%;box-shadow:0 0 12px rgba(255,255,255,0.3);animation:eyeBlink 5s infinite}
+    @keyframes eyeBlink{0%,90%,100%{transform:translateY(0)}92%,98%{transform:translateY(6px)}}
+    .bot .body{width:120px;height:84px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;margin-top:8px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03)}
+
+    /* animated aura */
+    .aura{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:320px;height:320px;border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(124,92,255,0.14), transparent 25%),radial-gradient(circle at 70% 70%, rgba(0,180,255,0.08), transparent 30%);filter:blur(36px);opacity:0.9;animation:auraPulse 6s infinite}
+    @keyframes auraPulse{0%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.06)}100%{transform:translate(-50%,-50%) scale(1)}}
+
+    /* title + subtitle + CTA block */
+    .hero-text{max-width:560px;text-align:left}
+    .hero-text h2{font-family:'Montserrat';font-size:2.2rem;margin-bottom:8px;color:#fff}
+    .hero-text p{color:var(--muted);margin-bottom:18px}
+
+    /* Animated buttons grid */
+    .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:6px}
+    .action-btn{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:12px 16px;border-radius:14px;display:flex;gap:12px;align-items:center;cursor:pointer;min-width:160px;transition:transform .28s cubic-bezier(.2,.9,.2,1),box-shadow .28s}
+    .action-btn:hover{transform:translateY(-8px);box-shadow:0 14px 34px rgba(2,6,23,0.6)}
+    .action-btn i{background:linear-gradient(90deg,var(--accent),#00b4ff);padding:10px;border-radius:10px;color:#071022;font-size:18px}
+    .action-btn .label{font-weight:600;color:#fff}
+    .action-btn .desc{font-size:0.9rem;color:var(--muted)}
+
+    /* footer small */
+    .home-footer{position:fixed;left:20px;bottom:18px;color:var(--muted);font-size:0.9rem}
+
+    /* blobs behind */
+    .blobs{position:fixed;inset:0;pointer-events:none;z-index:0}
+    .blob{position:absolute;filter:blur(44px);opacity:0.85;border-radius:50%;mix-blend-mode:screen}
+    .blob.b1{width:420px;height:420px;left:-120px;top:-120px;background:linear-gradient(135deg,var(--accent),#2dd4bf)}
+    .blob.b2{width:380px;height:380px;right:-80px;bottom:-80px;background:linear-gradient(135deg,#00b4ff,#7c5cff)}
+
+    /* particles canvas */
+    canvas#particles{position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0.18}
+
+    /* Study Material Specific Styles */
+    .section{display:none;width:100%;max-width:1000px;margin-top:20px}
+    .section.active{display:block;animation:fadeIn 0.5s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+    .card{background:var(--card);border-radius:16px;padding:24px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 8px 32px rgba(0,0,0,0.2);transition:transform .3s ease,box-shadow .3s ease}
+    .card:hover{transform:translateY(-5px);box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+
+    .user-selection{display:flex;justify-content:center;gap:30px;margin:40px 0}
+    .user-card{width:280px;text-align:center;cursor:pointer;padding:40px 20px}
+    .user-icon{font-size:4rem;margin-bottom:20px;background:linear-gradient(135deg,var(--accent),var(--accent-light));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .user-title{font-size:1.5rem;margin-bottom:10px}
+    .user-desc{color:var(--muted);line-height:1.6}
+
+    .course-grid,.selection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;margin-top:30px}
+    .course-card,.selection-card{text-align:center;padding:25px 15px;cursor:pointer}
+    .course-icon,.selection-icon{font-size:2.5rem;margin-bottom:15px;color:var(--accent)}
+
+    .material-card{display:flex;justify-content:space-between;align-items:center;padding:20px;margin-bottom:15px;border-radius:12px;background:rgba(15,17,21,0.7);transition:all 0.3s ease;border:1px solid rgba(255,255,255,0.03)}
+    .material-card:hover{background:rgba(15,17,21,0.9);transform:translateX(5px)}
+    .material-info h3{margin-bottom:5px;font-size:1.2rem}
+    .material-meta{display:flex;gap:15px;color:var(--muted);font-size:0.9rem}
+    .material-actions{display:flex;gap:10px}
+
+    .upload-area{border:2px dashed var(--accent);border-radius:15px;padding:40px;text-align:center;margin:30px 0;background:rgba(59,130,246,0.05);transition:all 0.3s ease}
+    .upload-area:hover{background:rgba(59,130,246,0.1)}
+    .upload-icon{font-size:3rem;color:var(--accent);margin-bottom:15px}
+
+    .back-btn{background:transparent;border:1px solid rgba(255,255,255,0.1);color:var(--text);margin-bottom:20px}
+    .back-btn:hover{background:rgba(255,255,255,0.05)}
+
+    /* Buttons */
+    button{padding:12px 24px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),#00b4ff);color:#071022;font-weight:600;cursor:pointer;transition:all 0.3s ease;display:flex;align-items:center;gap:8px;font-size:1rem}
+    button:hover{transform:translateY(-3px);box-shadow:0 6px 15px rgba(59,130,246,0.4)}
+    button:active{transform:translateY(0)}
+    button.success{background:linear-gradient(90deg,#10b981,#34d399);color:#071022}
+    button.warning{background:linear-gradient(90deg,#f59e0b,#fbbf24);color:#071022}
+    button.danger{background:linear-gradient(90deg,#ef4444,#f87171);color:#071022}
+
+    /* responsive */
+    @media (max-width:880px){
+      .hero-area{flex-direction:column-reverse;gap:18px}
+      .actions{grid-template-columns:repeat(2,1fr)}
+      .ai-visual{width:260px;height:260px}
+      .user-selection{flex-direction:column;align-items:center}
+    }
+    @media (max-width:520px){
+      .actions{grid-template-columns:1fr}
+      header{left:12px}
+      .home-footer{left:12px}
+      .course-grid,.selection-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+      .material-card{flex-direction:column;align-items:flex-start;gap:15px}
+      .material-actions{width:100%;justify-content:flex-end}
+    }
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+  </div>
+
+  <canvas id="particles"></canvas>
+
+  <header>
+    <div class="logo"><i class="fas fa-book-open" style="color:var(--accent)"></i><h1>Student Notes Hub</h1></div>
+  </header>
+
+  <div class="wrap">
+    <section class="hero-area">
+      <div class="ai-visual">
+        <div class="aura" aria-hidden></div>
+        <div class="bot-sphere" role="img" aria-label="Animated AI bot">
+          <div class="bot" id="bot">
+            <div class="head"><div class="eye"><div class="iris"></div></div></div>
+            <div class="body"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-text">
+        <h2>Study Materials & PYQs</h2>
+        <p>Access notes, previous year question papers, and study resources. Teachers can upload materials for students.</p>
+
+        <div class="actions" role="toolbar" aria-label="Main tools">
+          <div class="action-btn" onclick="goBack()" title="Back to Home">
+            <i class="fas fa-arrow-left"></i>
+            <div>
+              <div class="label">Back to Home</div>
+              <div class="desc">Return to main menu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- User Selection Section -->
+    <section id="user-selection" class="section active">
+      <div class="card">
+        <h2 style="font-family:'Montserrat';margin-bottom:20px;color:#fff">Select Your Role</h2>
+        <p style="text-align:center;margin-bottom:30px;color:var(--muted);">
+          Choose whether you are a student looking for study materials or a teacher wanting to upload content.
+        </p>
+        
+        <div class="user-selection">
+          <div class="user-card card" onclick="selectUser('student')">
+            <div class="user-icon">
+              <i class="fas fa-user-graduate"></i>
+            </div>
+            <h3 class="user-title">Student</h3>
+            <p class="user-desc">Access notes, previous year question papers, and study materials for your courses.</p>
+          </div>
+          
+          <div class="user-card card" onclick="selectUser('teacher')">
+            <div class="user-icon">
+              <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <h3 class="user-title">Teacher</h3>
+            <p class="user-desc">Upload study materials, notes, and question papers for your students.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Course Selection Section -->
+    <section id="course-selection" class="section">
+      <button class="back-btn" onclick="goBackTo('user-selection')">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      
+      <div class="card">
+        <h2 style="font-family:'Montserrat';margin-bottom:20px;color:#fff">Select Your Course</h2>
+        <p style="text-align:center;margin-bottom:30px;color:var(--muted);">
+          Choose the course you want to access materials for.
+        </p>
+        
+        <div class="course-grid">
+          <div class="course-card card" onclick="selectCourse('Computer Science')">
+            <div class="course-icon">
+              <i class="fas fa-laptop-code"></i>
+            </div>
+            <h3>Computer Science</h3>
+          </div>
+          
+          <div class="course-card card" onclick="selectCourse('Electrical Engineering')">
+            <div class="course-icon">
+              <i class="fas fa-bolt"></i>
+            </div>
+            <h3>Electrical Engineering</h3>
+          </div>
+          
+          <div class="course-card card" onclick="selectCourse('Mechanical Engineering')">
+            <div class="course-icon">
+              <i class="fas fa-cogs"></i>
+            </div>
+            <h3>Mechanical Engineering</h3>
+          </div>
+          
+          <div class="course-card card" onclick="selectCourse('Civil Engineering')">
+            <div class="course-icon">
+              <i class="fas fa-hard-hat"></i>
+            </div>
+            <h3>Civil Engineering</h3>
+          </div>
+          
+          <div class="course-card card" onclick="selectCourse('Business Administration')">
+            <div class="course-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Business Administration</h3>
+          </div>
+          
+          <div class="course-card card" onclick="selectCourse('Mathematics')">
+            <div class="course-icon">
+              <i class="fas fa-square-root-alt"></i>
+            </div>
+            <h3>Mathematics</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Year & Branch Selection Section -->
+    <section id="year-branch-selection" class="section">
+      <button class="back-btn" onclick="goBackTo('course-selection')">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      
+      <div class="card">
+        <h2 style="font-family:'Montserrat';margin-bottom:20px;color:#fff">Select Year & Branch</h2>
+        <p style="text-align:center;margin-bottom:30px;color:var(--muted);">
+          Choose your academic year and branch to access relevant materials.
+        </p>
+        
+        <h3 style="margin:20px 0 10px;color:var(--accent);">Select Year</h3>
+        <div class="selection-grid">
+          <div class="selection-card card" onclick="selectYear('First Year')">
+            <div class="selection-icon">
+              <i class="fas fa-1"></i>
+            </div>
+            <h3>First Year</h3>
+          </div>
+          
+          <div class="selection-card card" onclick="selectYear('Second Year')">
+            <div class="selection-icon">
+              <i class="fas fa-2"></i>
+            </div>
+            <h3>Second Year</h3>
+          </div>
+          
+          <div class="selection-card card" onclick="selectYear('Third Year')">
+            <div class="selection-icon">
+              <i class="fas fa-3"></i>
+            </div>
+            <h3>Third Year</h3>
+          </div>
+          
+          <div class="selection-card card" onclick="selectYear('Fourth Year')">
+            <div class="selection-icon">
+              <i class="fas fa-4"></i>
+            </div>
+            <h3>Fourth Year</h3>
+          </div>
+        </div>
+        
+        <h3 style="margin:30px 0 10px;color:var(--accent);">Select Branch</h3>
+        <div class="selection-grid">
+          <div class="selection-card card" onclick="selectBranch('Computer Science')">
+            <div class="selection-icon">
+              <i class="fas fa-laptop-code"></i>
+            </div>
+            <h3>Computer Science</h3>
+          </div>
+          
+          <div class="selection-card card" onclick="selectBranch('Information Technology')">
+            <div class="selection-icon">
+              <i class="fas fa-network-wired"></i>
+            </div>
+            <h3>Information Technology</h3>
+          </div>
+          
+          <div class="selection-card card" onclick="selectBranch('Electronics')">
+            <div class="selection-icon">
+              <i class="fas fa-microchip"></i>
+            </div>
+            <h3>Electronics</h3>
+          </div>
+          
+          <div class="selection-card card" onclick="selectBranch('Mechanical')">
+            <div class="selection-icon">
+              <i class="fas fa-cogs"></i>
+            </div>
+            <h3>Mechanical</h3>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Student Materials Section -->
+    <section id="student-materials" class="section">
+      <button class="back-btn" onclick="goBackTo('year-branch-selection')">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      
+      <div class="card">
+        <h2 style="font-family:'Montserrat';margin-bottom:20px;color:#fff">Study Materials</h2>
+        <p style="text-align:center;margin-bottom:30px;color:var(--muted);">
+          Access notes, previous year question papers, and other study resources for your course.
+        </p>
+        
+        <div class="materials-container">
+          <div class="material-card">
+            <div class="material-info">
+              <h3>Data Structures & Algorithms Notes</h3>
+              <div class="material-meta">
+                <span><i class="far fa-file-pdf"></i> PDF</span>
+                <span><i class="far fa-calendar"></i> Updated: 15 Oct 2023</span>
+                <span><i class="fas fa-download"></i> 245 downloads</span>
+              </div>
+            </div>
+            <div class="material-actions">
+              <button class="success">
+                <i class="fas fa-download"></i> Download
+              </button>
+            </div>
+          </div>
+          
+          <div class="material-card">
+            <div class="material-info">
+              <h3>PYQ - 2022 End Semester</h3>
+              <div class="material-meta">
+                <span><i class="far fa-file-pdf"></i> PDF</span>
+                <span><i class="far fa-calendar"></i> Added: 12 May 2023</span>
+                <span><i class="fas fa-download"></i> 189 downloads</span>
+              </div>
+            </div>
+            <div class="material-actions">
+              <button class="success">
+                <i class="fas fa-download"></i> Download
+              </button>
+            </div>
+          </div>
+          
+          <div class="material-card">
+            <div class="material-info">
+              <h3>Object Oriented Programming Slides</h3>
+              <div class="material-meta">
+                <span><i class="far fa-file-powerpoint"></i> PPT</span>
+                <span><i class="far fa-calendar"></i> Updated: 5 Sep 2023</span>
+                <span><i class="fas fa-download"></i> 167 downloads</span>
+              </div>
+            </div>
+            <div class="material-actions">
+              <button class="success">
+                <i class="fas fa-download"></i> Download
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Teacher Upload Section -->
+    <section id="teacher-upload" class="section">
+      <button class="back-btn" onclick="goBackTo('year-branch-selection')">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      
+      <div class="card">
+        <h2 style="font-family:'Montserrat';margin-bottom:20px;color:#fff">Upload Study Materials</h2>
+        <p style="text-align:center;margin-bottom:30px;color:var(--muted);">
+          Upload notes, question papers, and other study resources for your students.
+        </p>
+        
+        <div class="upload-area">
+          <div class="upload-icon">
+            <i class="fas fa-cloud-upload-alt"></i>
+          </div>
+          <h3>Upload Files</h3>
+          <p style="margin:15px 0 20px;color:var(--muted);">
+            Drag and drop your files here or click to browse
+          </p>
+          <button>
+            <i class="fas fa-folder-open"></i> Browse Files
+          </button>
+        </div>
+        
+        <div style="margin-top:30px;">
+          <h3 style="margin-bottom:15px;color:var(--accent);">Uploaded Materials</h3>
+          
+          <div class="material-card">
+            <div class="material-info">
+              <h3>Database Management Systems Notes</h3>
+              <div class="material-meta">
+                <span><i class="far fa-file-pdf"></i> PDF</span>
+                <span><i class="far fa-calendar"></i> Uploaded: 10 Nov 2023</span>
+                <span><i class="fas fa-eye"></i> 342 views</span>
+              </div>
+            </div>
+            <div class="material-actions">
+              <button class="warning">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="danger">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+          
+          <div class="material-card">
+            <div class="material-info">
+              <h3>Operating Systems PYQ 2021</h3>
+              <div class="material-meta">
+                <span><i class="far fa-file-pdf"></i> PDF</span>
+                <span><i class="far fa-calendar"></i> Uploaded: 28 Oct 2023</span>
+                <span><i class="fas fa-eye"></i> 298 views</span>
+              </div>
+            </div>
+            <div class="material-actions">
+              <button class="warning">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="danger">
+                <i class="fas fa-trash"></i> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div style="height:28px"></div>
+
+  </div>
+
+  <div class="home-footer">StudyHub: Notes & PYQs for Students & Teachers</div>
+
+  <script>
+    // lightweight particle background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+    addEventListener('resize',resize);resize();
+    const particles = Array.from({length:70},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.6+0.4,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25}));
+    function tick(){ctx.clearRect(0,0,canvas.width,canvas.height);for(const p of particles){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;ctx.beginPath();ctx.fillStyle='rgba(180,200,255,0.04)';ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}requestAnimationFrame(tick)}tick();
+
+    // small bot interaction on hover
+    const bot = document.getElementById('bot');
+    function onMove(e){const rect = bot.getBoundingClientRect();const cx = rect.left+rect.width/2;const cy = rect.top+rect.height/2;const x = (e.clientX - cx)/20;const y = (e.clientY - cy)/20;bot.style.transform = `translateY(${ -10 + y }px) rotate(${x}deg)`}
+    addEventListener('mousemove',onMove);
+
+    // Study Material Navigation Logic
+    let currentUser = '';
+    let currentCourse = '';
+    let currentYear = '';
+    let currentBranch = '';
+    
+    function selectUser(user) {
+      currentUser = user;
+      document.getElementById('user-selection').classList.remove('active');
+      document.getElementById('course-selection').classList.add('active');
+    }
+    
+    function selectCourse(course) {
+      currentCourse = course;
+      document.getElementById('course-selection').classList.remove('active');
+      document.getElementById('year-branch-selection').classList.add('active');
+    }
+    
+    function selectYear(year) {
+      currentYear = year;
+    }
+    
+    function selectBranch(branch) {
+      currentBranch = branch;
+      
+      // Navigate to appropriate section based on user type
+      document.getElementById('year-branch-selection').classList.remove('active');
+      
+      if (currentUser === 'student') {
+        document.getElementById('student-materials').classList.add('active');
+      } else {
+        document.getElementById('teacher-upload').classList.add('active');
+      }
+    }
+    
+    function goBackTo(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+      });
+      
+      // Show the target section
+      document.getElementById(sectionId).classList.add('active');
+    }
+    
+    function goBack() {
+      // Navigate back to the main page (home)
+      window.location.href = 'index.html';
+    }
+
+    // Add floating animation to cards on mouse enter
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-10px)';
+      });
+      
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+      });
+    });
+  </script>
+</body>
+</html>

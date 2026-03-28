@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Notes Hub — Contact</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root{--bg:#07070a;--card:#0f1115;--muted:#9aa4b2;--accent:#7c5cff;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;}
+    body{font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial;background:radial-gradient(1000px 500px at 10% 12%, rgba(124,92,255,0.12), transparent),radial-gradient(800px 400px at 92% 88%, rgba(0,180,255,0.05), transparent),var(--bg);color:#e6eef8;overflow:hidden}
+
+    /* Header (compact) */
+    header{position:fixed;left:20px;top:18px;z-index:80;display:flex;align-items:center;gap:12px}
+    header .logo{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+    header h1{font-family:'Montserrat';font-size:1rem;margin:0}
+
+    /* blobs behind */
+    .blobs{position:fixed;inset:0;pointer-events:none;z-index:0}
+    .blob{position:absolute;filter:blur(44px);opacity:0.85;border-radius:50%;mix-blend-mode:screen}
+    .blob.b1{width:420px;height:420px;left:-120px;top:-120px;background:linear-gradient(135deg,var(--accent),#2dd4bf)}
+    .blob.b2{width:380px;height:380px;right:-80px;bottom:-80px;background:linear-gradient(135deg,#00b4ff,#7c5cff)}
+
+    /* particles canvas */
+    canvas#particles{position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0.18}
+
+    /* Form styles */
+    .form-container{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);border-radius:16px;padding:32px;max-width:500px;width:100%;backdrop-filter:blur(10px);box-shadow:0 20px 40px rgba(0,0,0,0.4)}
+    .form-title{font-family:'Montserrat';font-size:1.8rem;margin-bottom:8px;color:#fff;text-align:center}
+    .form-subtitle{color:var(--muted);margin-bottom:24px;text-align:center}
+    .form-group{margin-bottom:20px}
+    .form-label{display:block;margin-bottom:8px;color:#e6eef8;font-size:0.9rem}
+    .form-input{width:100%;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#e6eef8;font-family:'Poppins';font-size:1rem;transition:all .28s}
+    .form-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,92,255,0.2)}
+    .form-textarea{min-height:120px;resize:vertical}
+    .form-submit{width:100%;padding:14px;background:linear-gradient(90deg,var(--accent),#00b4ff);border:none;border-radius:10px;color:#071022;font-family:'Montserrat';font-weight:600;font-size:1rem;cursor:pointer;transition:all .28s}
+    .form-submit:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(124,92,255,0.3)}
+    .form-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+
+    /* Success/Error messages */
+    .message{text-align:center;padding:12px;border-radius:10px;margin-bottom:20px;display:none}
+    .message.success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#4ade80}
+    .message.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171}
+
+    /* Contact info */
+    .contact-info{margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.05)}
+    .contact-item{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .contact-item i{background:linear-gradient(90deg,var(--accent),#00b4ff);padding:10px;border-radius:10px;color:#071022;font-size:16px;width:38px;height:38px;display:flex;align-items:center;justify-content:center}
+    .contact-item .text{color:var(--muted);font-size:0.9rem}
+
+    /* Center content */
+    .center-content{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+
+    /* Back button */
+    .back-btn{position:fixed;right:20px;top:18px;z-index:80;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:8px 16px;border-radius:10px;color:#e6eef8;font-size:0.9rem;cursor:pointer;transition:all .28s}
+    .back-btn:hover{background:rgba(124,92,255,0.1);transform:translateY(-2px)}
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+  </div>
+
+  <canvas id="particles"></canvas>
+
+  <header>
+    <div class="logo"><i class="fas fa-book-open" style="color:var(--accent)"></i><h1>Student Notes Hub</h1></div>
+  </header>
+
+  <div class="back-btn" onclick="go('index.html')"><i class="fas fa-arrow-left"></i> Back to Home</div>
+
+  <div class="center-content">
+    <div class="form-container">
+      <h2 class="form-title">Get In Touch</h2>
+      <p class="form-subtitle">Have questions or feedback? We'd love to hear from you</p>
+      
+      <!-- Success/Error Messages -->
+      <div id="successMessage" class="message success" style="display: none;">
+        <i class="fas fa-check-circle"></i> Thank you! Your message has been sent successfully.
+      </div>
+      <div id="errorMessage" class="message error" style="display: none;">
+        <i class="fas fa-exclamation-circle"></i> Sorry, there was an error sending your message. Please try again.
+      </div>
+      
+      <form id="contactForm" action="contact-form-debug.php" method="POST">
+        <div class="form-group">
+          <label class="form-label" for="name">Your Name *</label>
+          <input type="text" id="name" name="name" class="form-input" placeholder="Enter your name" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address *</label>
+          <input type="email" id="email" name="email" class="form-input" placeholder="your.email@example.com" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="subject">Subject *</label>
+          <input type="text" id="subject" name="subject" class="form-input" placeholder="What is this regarding?" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="message">Message *</label>
+          <textarea id="message" name="message" class="form-input form-textarea" placeholder="Tell us more..." required></textarea>
+        </div>
+        
+        <button type="submit" class="form-submit" id="submitBtn">
+          <span id="submitText">Send Message</span>
+          <span id="submitLoading" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i> Sending...
+          </span>
+        </button>
+      </form>
+      
+      <div class="contact-info">
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <div class="text">support@studentnoteshub.com</div>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <div class="text">+1 (555) 123-4567</div>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-map-marker-alt"></i>
+          <div class="text">123 Education Street, Learning City</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // lightweight particle background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+    addEventListener('resize',resize);resize();
+    const particles = Array.from({length:70},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.6+0.4,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25}));
+    function tick(){ctx.clearRect(0,0,canvas.width,canvas.height);for(const p of particles){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;ctx.beginPath();ctx.fillStyle='rgba(180,200,255,0.04)';ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}requestAnimationFrame(tick)}tick();
+
+    // navigation helper
+    function go(page){
+      window.location.href = page;
+    }
+
+    // Replace the existing form submission script with this:
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    const submitLoading = document.getElementById('submitLoading');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    // Hide previous messages
+    successMessage.style.display = 'none';
+    errorMessage.style.display = 'none';
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitText.style.display = 'none';
+    submitLoading.style.display = 'inline';
+    
+    // Get form data
+    const formData = new FormData(this);
+    
+    // Send form data using Fetch API
+    fetch('contact-form-debug.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(data => {
+        if (data === 'success') {
+            successMessage.style.display = 'block';
+            document.getElementById('contactForm').reset();
+            window.scrollTo(0, 0);
+        } else {
+            // Show specific error messages
+            let errorText = 'Sorry, there was an error sending your message. Please try again.';
+            
+            if (data.includes('empty_fields')) {
+                errorText = 'Please fill in all required fields.';
+            } else if (data.includes('invalid_email')) {
+                errorText = 'Please enter a valid email address.';
+            } else if (data.includes('mail_failed')) {
+                errorText = 'Email service is not available. Please contact us directly at sk74568877@gmail.com';
+            }
+            
+            errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorText}`;
+            errorMessage.style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> Network error. Please check your connection and try again.`;
+        errorMessage.style.display = 'block';
+        window.scrollTo(0, 0);
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitText.style.display = 'inline';
+        submitLoading.style.display = 'none';
+    });
+});
+</script>
+</body>
+</html>

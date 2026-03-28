@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Notes Hub — AI Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --bg: #07070a;
+      --card: #0f1115;
+      --muted: #9aa4b2;
+      --accent: #7c5cff;
+      --accent-glow: rgba(124, 92, 255, 0.6);
+      --glass: rgba(255, 255, 255, 0.03);
+      --success: #00d9a6;
+      --danger: #ff5c8d;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      font-family: 'Poppins', system-ui, Segoe UI, Roboto, Arial;
+      background: radial-gradient(900px 400px at 8% 12%, rgba(124, 92, 255, 0.12), transparent),
+                  radial-gradient(700px 350px at 92% 88%, rgba(0, 180, 255, 0.05), transparent),
+                  var(--bg);
+      color: #e6eef8;
+      overflow-x: hidden;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1200px;
+      margin: 28px auto;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    header {
+      position: fixed;
+      left: 20px;
+      top: 18px;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    header h1 {
+      font-family: 'Montserrat';
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    /* Left: 3D-style floating robot */
+    .robot-panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .robot-card {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 18px;
+      border-radius: 16px;
+      backdrop-filter: blur(6px);
+    }
+    .robot-stage {
+      height: 340px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .robot-3d {
+      width: 220px;
+      height: 260px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: translateZ(0);
+      animation: robotRotate 8s ease-in-out infinite;
+    }
+    @keyframes robotRotate {
+      0% { transform: rotateY(0) translateY(0); }
+      50% { transform: rotateY(12deg) translateY(-8px); }
+      100% { transform: rotateY(0) translateY(0); }
+    }
+    .robot-shell {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 220px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, var(--accent), #00b4ff);
+      box-shadow: 0 20px 60px rgba(124, 92, 255, 0.14);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      transition: all 0.3s ease;
+    }
+    .robot-shell.listening {
+      box-shadow: 0 0 30px var(--accent-glow);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 10px var(--accent-glow); }
+      50% { box-shadow: 0 0 30px var(--accent-glow); }
+      100% { box-shadow: 0 0 10px var(--accent-glow); }
+    }
+    .robot-shell .visor {
+      width: 120px;
+      height: 34px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .robot-shell .visor .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #071022;
+      box-shadow: 0 0 14px rgba(255, 255, 255, 0.25);
+    }
+    .robot-shell .chest {
+      width: 140px;
+      height: 60px;
+      margin-top: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .robot-shadow {
+      width: 160px;
+      height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(2, 6, 23, 0.5), transparent);
+      filter: blur(6px);
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+
+    /* Right: chat area */
+    .chat-card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      position: relative;
+    }
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .chat-header h3 {
+      margin: 0;
+      font-family: 'Montserrat';
+    }
+    .chat-body {
+      flex: 1;
+      overflow: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bubble {
+      max-width: 78%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      line-height: 1.4;
+      box-shadow: 0 6px 20px rgba(2, 6, 23, 0.5);
+      animation: bubbleAppear 0.3s ease-out;
+    }
+    @keyframes bubbleAppear {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .bubble.bot {
+      align-self: flex-start;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      color: #dbeafe;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: linear-gradient(90deg, var(--accent), #00b4ff);
+      color: #071022;
+    }
+    .meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .typing {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #cfe6ff;
+      opacity: 0.85;
+      animation: blink 1s infinite;
+    }
+    .dot:nth-child(2) {
+      animation-delay: 0.16s;
+    }
+    .dot:nth-child(3) {
+      animation-delay: 0.32s;
+    }
+    @keyframes blink {
+      0% { transform: translateY(0); opacity: 0.4; }
+      50% { transform: translateY(-6px); opacity: 1; }
+      100% { transform: translateY(0); opacity: 0.4; }
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: transparent;
+      color: inherit;
+      transition: all 0.3s ease;
+    }
+    .chat-input input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.2);
+    }
+    .chat-input button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(90deg, var(--accent), #00b4ff);
+      color: #071022;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .chat-input button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    .chat-input button:active {
+      transform: translateY(0);
+    }
+
+    /* Voice button with pulse animation */
+    #voice-btn {
+      position: relative;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    #voice-btn.active {
+      color: var(--success);
+      border-color: var(--success);
+    }
+    #voice-btn.active::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      background: var(--success);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: voicePulse 1.5s infinite;
+      z-index: -1;
+    }
+    @keyframes voicePulse {
+      0% {
+        width: 0;
+        height: 0;
+        opacity: 0.7;
+      }
+      100% {
+        width: 150%;
+        height: 150%;
+        opacity: 0;
+      }
+    }
+
+    /* Customizer & back */
+    .top-controls {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .back {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 8px 10px;
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .back:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Settings panel */
+    .settings-panel {
+      position: absolute;
+      top: 60px;
+      right: 18px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      width: 280px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: none;
+      animation: neonGlass 0.4s ease-out;
+    }
+    @keyframes neonGlass {
+      0% { opacity: 0; transform: translateY(-10px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .settings-panel h4 {
+      margin-bottom: 12px;
+      font-family: 'Montserrat';
+      color: #fff;
+    }
+    .settings-group {
+      margin-bottom: 16px;
+    }
+    .settings-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .settings-group select, .settings-group input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.3);
+      color: inherit;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .checkbox-group input {
+      width: auto;
+    }
+
+    /* Small footer */
+    .assistant-footer {
+      margin-top: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* Blobs + particles behind */
+    .blobs {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .blob {
+      position: absolute;
+      filter: blur(44px);
+      opacity: 0.85;
+      border-radius: 50%;
+      mix-blend-mode: screen;
+    }
+    .blob.b1 {
+      width: 420px;
+      height: 420px;
+      left: -120px;
+      top: -120px;
+      background: linear-gradient(135deg, var(--accent), #2dd4bf);
+    }
+    .blob.b2 {
+      width: 380px;
+      height: 380px;
+      right: -80px;
+      bottom: -80px;
+      background: linear-gradient(135deg, #00b4ff, #7c5cff);
+    }
+    canvas#particles {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+      opacity: 0.12;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px) {
+      .container {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+      .robot-stage {
+        height: 240px;
+      }
+      .chat-card {
+        height: 520px;
+      }
+      .settings-panel {
+        width: 90%;
+        right: 5%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+  </div>
+  <canvas id="particles"></canvas>
+
+  <header>
+    <div class="logo"><i class="fas fa-book-open" style="color:var(--accent)"></i><h1>Student Notes Hub</h1></div>
+  </header>
+
+  <div class="container">
+    <aside class="robot-panel">
+      <div class="robot-card">
+        <div class="robot-stage">
+          <div class="robot-3d" aria-hidden>
+            <div class="robot-shell">
+              <div class="visor"><div class="dot"></div></div>
+              <div class="chest"><div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.08)"></div><div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.06)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="robot-shadow" aria-hidden></div>
+      </div>
+      <div style="width:100%;text-align:center;margin-top:8px">
+        <strong style="color:#fff">Astra — Study Assistant</strong>
+        <div style="color:var(--muted);font-size:0.9rem;margin-top:6px">Floating AI with contextual hints & quick actions</div>
+      </div>
+    </aside>
+
+    <main class="chat-card" role="main">
+      <div style="display:flex;align-items:center;">
+        <div class="chat-header">
+          <h3>AI Chat — Astra</h3>
+          <div class="meta" style="margin-left:12px">Demo (client-side). Connect an API for full responses.</div>
+        </div>
+        <div class="top-controls">
+          <button class="back" onclick="go('index.html')"><i class="fas fa-arrow-left"></i> Home</button>
+          <button class="back" id="settings-btn"><i class="fas fa-cog"></i> Settings</button>
+          <button class="back" id="clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="chat-body" id="chat-body" aria-live="polite"></div>
+
+      <div class="chat-input">
+        <button id="voice-btn" title="Voice Input"><i class="fas fa-microphone"></i></button>
+        <input id="chat-input" placeholder="Ask Astra: speak or type here" aria-label="Chat input" />
+        <button id="send">Send</button>
+      </div>
+
+      <div class="assistant-footer">Quick shortcuts: type <code>summary:</code> or <code>explain:</code> — press Enter to send.</div>
+      
+      <!-- Settings Panel -->
+      <div class="settings-panel" id="settings-panel">
+        <h4>Assistant Settings</h4>
+        
+        <div class="settings-group">
+          <label for="voice-style">Voice Style</label>
+          <select id="voice-style">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="robot">Robot</option>
+            <option value="deep">Deep</option>
+            <option value="soft">Soft</option>
+          </select>
+        </div>
+        
+        <div class="settings-group">
+          <label for="emotion-preset">Emotion Preset</label>
+          <select id="emotion-preset">
+            <option value="neutral">Neutral</option>
+            <option value="friendly">Friendly</option>
+            <option value="enthusiastic">Enthusiastic</option>
+            <option value="calm">Calm</option>
+            <option value="professional">Professional</option>
+          </select>
+        </div>
+        
+        <div class="settings-group">
+          <label for="speech-rate">Speech Rate</label>
+          <input type="range" id="speech-rate" min="0.5" max="2" step="0.1" value="1">
+          <div class="meta" id="rate-value">1.0x</div>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="auto-listen">
+          <label for="auto-listen">Auto-listen mode</label>
+        </div>
+        
+        <div class="checkbox-group">
+          <input type="checkbox" id="indian-english">
+          <label for="indian-english">Indian-English speech accuracy</label>
+        </div>
+        
+        <button class="back" style="margin-top:12px;width:100%" onclick="closeSettings()">Close</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Particles background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    
+    function resize() {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+    }
+    
+    addEventListener('resize', resize);
+    resize();
+    
+    const particles = [];
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.6 + 0.4,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25
+      });
+    }
+    
+    function tick() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(180, 200, 255, 0.03)';
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    // Chat functionality
+    const chatBody = document.getElementById('chat-body');
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send');
+    const voiceBtn = document.getElementById('voice-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsPanel = document.getElementById('settings-panel');
+    const clearBtn = document.getElementById('clear');
+    const robotShell = document.querySelector('.robot-shell');
+    
+    // Settings elements
+    const voiceStyleSelect = document.getElementById('voice-style');
+    const emotionPresetSelect = document.getElementById('emotion-preset');
+    const speechRateSlider = document.getElementById('speech-rate');
+    const rateValue = document.getElementById('rate-value');
+    const autoListenCheckbox = document.getElementById('auto-listen');
+    const indianEnglishCheckbox = document.getElementById('indian-english');
+    
+    // Speech synthesis setup
+    let speechRate = 1;
+    let voiceStyle = 'female';
+    let isListening = false;
+    let recognition;
+    
+    // Initialize speech recognition if available
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        isListening = true;
+        voiceBtn.classList.add('active');
+        robotShell.classList.add('listening');
+        addBubble('Listening...', 'bot');
+      };
+      
+      recognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        input.value = text;
+        sendMessage();
+      };
+      
+      recognition.onerror = (e) => {
+        console.error('Speech recognition error', e);
+        isListening = false;
+        voiceBtn.classList.remove('active');
+        robotShell.classList.remove('listening');
+        addBubble('Voice recognition error. Please try again.', 'bot');
+      };
+      
+      recognition.onend = () => {
+        isListening = false;
+        voiceBtn.classList.remove('active');
+        robotShell.classList.remove('listening');
+        
+        // Auto-restart if auto-listen is enabled
+        if (autoListenCheckbox.checked && !input.value.trim()) {
+          setTimeout(() => {
+            startListening();
+          }, 1000);
+        }
+      };
+    } else {
+      voiceBtn.disabled = true;
+      voiceBtn.title = 'Voice input not supported';
+    }
+    
+    // Add message bubble to chat
+    function addBubble(text, who = 'bot') {
+      const b = document.createElement('div');
+      b.className = 'bubble ' + who;
+      b.textContent = text;
+      chatBody.appendChild(b);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      
+      // Add timestamp
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = `${who === 'bot' ? 'Astra' : 'You'} • ${timeString}`;
+      chatBody.appendChild(meta);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+    
+    // Show typing indicator
+    function showTyping() {
+      const t = document.createElement('div');
+      t.className = 'bubble bot typing';
+      t.id = 'typing';
+      t.innerHTML = '<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+      chatBody.appendChild(t);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+    
+    // Hide typing indicator
+    function hideTyping() {
+      const t = document.getElementById('typing');
+      if (t) t.remove();
+    }
+    
+    // Canned responses for demo
+    const canned = [
+      {
+        q: /summary[:]?/i,
+        a: (q) => {
+          const content = q.replace(/summary[:]?/i, '').trim();
+          if (!content) return 'Send: summary: [paste text] — I will extract bullets.';
+          const s = content.replace(/\n/g, ' ').split(/(?<=[.!?])\s+/).filter(Boolean);
+          return 'Summary:\n• ' + s.slice(0, 4).map(x => x.trim()).join('\n• ');
+        }
+      },
+      {
+        q: /explain[:]?/i,
+        a: (q) => {
+          const t = q.replace(/explain[:]?/i, '').trim();
+          if (!t) return 'Send: explain: [topic] — e.g. explain: pointers';
+          return 'Explanation (short):\n' + t + ' — (For extended answers connect your backend AI).';
+        }
+      },
+      {
+        q: /leetcode|two-sum|reverse linked list|merge intervals/i,
+        a: () => 'Hint: Break the problem into examples, choose the right data structure, and write edge cases. Want a specific walkthrough?'
+      }
+    ];
+    
+    // Generate response based on query
+    function generateResponse(query) {
+      for (const c of canned) {
+        if (c.q.test(query)) {
+          return c.a(query);
+        }
+      }
+      
+      // Default responses based on emotion preset
+      const emotion = emotionPresetSelect.value;
+      const responses = {
+        neutral: ["I understand. Can you tell me more?", "That's interesting. What would you like to know?", "I see. How can I help you further?"],
+        friendly: ["Great question! Let me help with that.", "I'd be happy to assist! What else can I do for you?", "Thanks for asking! Here's what I think..."],
+        enthusiastic: ["Awesome question! Let's dive right in!", "I'm excited to help with this! Here's what I found.", "Fantastic! Here's the information you need!"],
+        calm: ["I understand. Let me provide some information.", "Take your time. I'm here to help.", "That's a thoughtful question. Here's my response."],
+        professional: ["Based on your query, here is the information.", "I've analyzed your request. Here are the details.", "Regarding your question, here is what I can share."]
+      };
+      
+      const defaultResponses = responses[emotion] || responses.neutral;
+      return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+    }
+    
+    // Process user message and generate response
+    function respond(query) {
+      showTyping();
+      
+      setTimeout(() => {
+        hideTyping();
+        const response = generateResponse(query);
+        addBubble(response, 'bot');
+        speak(response);
+      }, 800 + Math.random() * 800); // Random delay for more natural feel
+    }
+    
+    // Text-to-speech function
+    function speak(text) {
+      if (!window.speechSynthesis) return;
+      
+      // Cancel any ongoing speech
+      speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = speechRate;
+      
+      // Adjust voice based on selected style
+      const voices = speechSynthesis.getVoices();
+      let selectedVoice = null;
+      
+      // Filter voices based on selected style
+      if (voices.length > 0) {
+        switch (voiceStyle) {
+          case 'female':
+            selectedVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Karen'));
+            break;
+          case 'male':
+            selectedVoice = voices.find(v => v.name.includes('Male') || v.name.includes('Alex') || v.name.includes('Daniel'));
+            break;
+          case 'robot':
+            // Use a voice that sounds more robotic
+            selectedVoice = voices.find(v => v.name.includes('Zira') || v.name.includes('David'));
+            if (selectedVoice) utterance.rate = 0.9;
+            break;
+          case 'deep':
+            selectedVoice = voices.find(v => v.name.includes('Microsoft David') || v.name.includes('Google UK English Male'));
+            break;
+          case 'soft':
+            selectedVoice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Tessa'));
+            if (selectedVoice) utterance.rate = 0.8;
+            break;
+        }
+        
+        // Fallback to first available voice
+        if (!selectedVoice && voices.length > 0) {
+          selectedVoice = voices[0];
+        }
+        
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+      }
+      
+      // Adjust for Indian-English if selected
+      if (indianEnglishCheckbox.checked) {
+        utterance.lang = 'en-IN';
+        // Additional adjustments could be made here for better Indian-English pronunciation
+      }
+      
+      speechSynthesis.speak(utterance);
+    }
+    
+    // Start voice recognition
+    function startListening() {
+      if (!recognition) {
+        addBubble('Voice recognition is not supported in your browser.', 'bot');
+        return;
+      }
+      
+      try {
+        // Set language for Indian-English if selected
+        if (indianEnglishCheckbox.checked) {
+          recognition.lang = 'en-IN';
+        } else {
+          recognition.lang = 'en-US';
+        }
+        
+        recognition.start();
+      } catch (e) {
+        console.error('Error starting recognition:', e);
+      }
+    }
+    
+    // Send message function
+    function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+      
+      addBubble(message, 'user');
+      input.value = '';
+      respond(message);
+    }
+    
+    // Event listeners
+    sendBtn.addEventListener('click', sendMessage);
+    
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    
+    voiceBtn.addEventListener('click', () => {
+      if (isListening) {
+        recognition.stop();
+      } else {
+        startListening();
+      }
+    });
+    
+    settingsBtn.addEventListener('click', () => {
+      settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+    });
+    
+    clearBtn.addEventListener('click', () => {
+      chatBody.innerHTML = '';
+      addBubble('Chat cleared. How can I help you today?', 'bot');
+    });
+    
+    // Settings event listeners
+    voiceStyleSelect.addEventListener('change', () => {
+      voiceStyle = voiceStyleSelect.value;
+    });
+    
+    speechRateSlider.addEventListener('input', () => {
+      speechRate = parseFloat(speechRateSlider.value);
+      rateValue.textContent = speechRate.toFixed(1) + 'x';
+    });
+    
+    // Close settings when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+        settingsPanel.style.display = 'none';
+      }
+    });
+    
+    // Close settings function
+    function closeSettings() {
+      settingsPanel.style.display = 'none';
+    }
+    
+    // Robot animation on new messages
+    const observer = new MutationObserver(() => {
+      robotShell.animate([
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-6px)' },
+        { transform: 'translateY(0)' }
+      ], {
+        duration: 500,
+        iterations: 1
+      });
+    });
+    
+    observer.observe(chatBody, { childList: true, subtree: false });
+    
+    // Auto-listen if enabled
+    function checkAutoListen() {
+      if (autoListenCheckbox.checked && !isListening && !input.value.trim()) {
+        startListening();
+      }
+    }
+    
+    // Periodically check for auto-listen
+    setInterval(checkAutoListen, 3000);
+    
+    // Welcome message
+    addBubble('Hi! I am Astra — your study assistant. Try speaking or typing. I can summarize text, explain concepts, and help with coding problems.');
+    speak('Hi! I am Astra, your study assistant. You can speak or type your questions.');
+    
+    // Go to page function
+    function go(page) {
+      window.location.href = page;
+    }
+    
+    // Accessibility: respect reduced motion
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('.robot-3d').forEach(r => r.style.animation = 'none');
+      document.querySelectorAll('.blob').forEach(b => b.style.animation = 'none');
+    }
+    
+  </script>
+</body>
+</html>

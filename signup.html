@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Notes Hub — Sign Up</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root{--bg:#07070a;--card:#0f1115;--muted:#9aa4b2;--accent:#7c5cff;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;}
+    body{font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial;background:radial-gradient(1000px 500px at 10% 12%, rgba(124,92,255,0.12), transparent),radial-gradient(800px 400px at 92% 88%, rgba(0,180,255,0.05), transparent),var(--bg);color:#e6eef8;overflow:hidden}
+
+    /* Header (compact) */
+    header{position:fixed;left:20px;top:18px;z-index:80;display:flex;align-items:center;gap:12px}
+    header .logo{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+    header h1{font-family:'Montserrat';font-size:1rem;margin:0}
+
+    /* blobs behind */
+    .blobs{position:fixed;inset:0;pointer-events:none;z-index:0}
+    .blob{position:absolute;filter:blur(44px);opacity:0.85;border-radius:50%;mix-blend-mode:screen}
+    .blob.b1{width:420px;height:420px;left:-120px;top:-120px;background:linear-gradient(135deg,var(--accent),#2dd4bf)}
+    .blob.b2{width:380px;height:380px;right:-80px;bottom:-80px;background:linear-gradient(135deg,#00b4ff,#7c5cff)}
+
+    /* particles canvas */
+    canvas#particles{position:fixed;left:0;top:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0.18}
+
+    /* Form styles */
+    .form-container{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);border-radius:16px;padding:32px;max-width:420px;width:100%;backdrop-filter:blur(10px);box-shadow:0 20px 40px rgba(0,0,0,0.4)}
+    .form-title{font-family:'Montserrat';font-size:1.8rem;margin-bottom:8px;color:#fff;text-align:center}
+    .form-subtitle{color:var(--muted);margin-bottom:24px;text-align:center}
+    .form-group{margin-bottom:20px}
+    .form-label{display:block;margin-bottom:8px;color:#e6eef8;font-size:0.9rem}
+    .form-input{width:100%;padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:#e6eef8;font-family:'Poppins';font-size:1rem;transition:all .28s}
+    .form-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,92,255,0.2)}
+    .form-submit{width:100%;padding:14px;background:linear-gradient(90deg,var(--accent),#00b4ff);border:none;border-radius:10px;color:#071022;font-family:'Montserrat';font-weight:600;font-size:1rem;cursor:pointer;transition:all .28s}
+    .form-submit:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(124,92,255,0.3)}
+    .form-footer{text-align:center;margin-top:20px;color:var(--muted);font-size:0.9rem}
+    .form-link{color:var(--accent);text-decoration:none;cursor:pointer}
+    .form-link:hover{text-decoration:underline}
+
+    /* Center content */
+    .center-content{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+
+    /* Back button */
+    .back-btn{position:fixed;right:20px;top:18px;z-index:80;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:8px 16px;border-radius:10px;color:#e6eef8;font-size:0.9rem;cursor:pointer;transition:all .28s}
+    .back-btn:hover{background:rgba(124,92,255,0.1);transform:translateY(-2px)}
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+  </div>
+
+  <canvas id="particles"></canvas>
+
+  <header>
+    <div class="logo"><i class="fas fa-book-open" style="color:var(--accent)"></i><h1>Student Notes Hub</h1></div>
+  </header>
+
+  <div class="back-btn" onclick="go('index.html')"><i class="fas fa-arrow-left"></i> Back to Home</div>
+
+  <div class="center-content">
+    <div class="form-container">
+      <h2 class="form-title">Create Account</h2>
+      <p class="form-subtitle">Join to access all study tools</p>
+      
+      <form id="signupForm">
+        <div class="form-group">
+          <label class="form-label" for="fullName">Full Name</label>
+          <input type="text" id="fullName" class="form-input" placeholder="Enter your full name" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" class="form-input" placeholder="your.email@example.com" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" id="password" class="form-input" placeholder="Create a password" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm your password" required>
+        </div>
+        
+        <button type="submit" class="form-submit">Create Account</button>
+      </form>
+      
+      <div class="form-footer">
+        Already have an account? <span class="form-link" onclick="go('login.html')">Sign in here</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // lightweight particle background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+    addEventListener('resize',resize);resize();
+    const particles = Array.from({length:70},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.6+0.4,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25}));
+    function tick(){ctx.clearRect(0,0,canvas.width,canvas.height);for(const p of particles){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;ctx.beginPath();ctx.fillStyle='rgba(180,200,255,0.04)';ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}requestAnimationFrame(tick)}tick();
+
+    // navigation helper
+    function go(page){
+      window.location.href = page;
+    }
+
+    // Form submission
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (password !== confirmPassword) {
+        alert('Passwords do not match!');
+        return;
+      }
+      
+      // In a real app, you would handle registration here
+      alert('Account creation functionality would be implemented here!');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Notes Hub — AI Resume Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --bg: #07070a;
+      --card: #0f1115;
+      --muted: #9aa4b2;
+      --accent: #7c5cff;
+      --accent-glow: rgba(124, 92, 255, 0.6);
+      --glass: rgba(255, 255, 255, 0.03);
+      --success: #00d9a6;
+      --danger: #ff5c8d;
+      --warning: #ffb84d;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      font-family: 'Poppins', system-ui, Segoe UI, Roboto, Arial;
+      background: radial-gradient(900px 400px at 8% 12%, rgba(124, 92, 255, 0.12), transparent),
+                  radial-gradient(700px 350px at 92% 88%, rgba(0, 180, 255, 0.05), transparent),
+                  var(--bg);
+      color: #e6eef8;
+      overflow-x: hidden;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1400px;
+      margin: 28px auto;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    header {
+      position: fixed;
+      left: 20px;
+      top: 18px;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    header h1 {
+      font-family: 'Montserrat';
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    /* Left: 3D-style floating robot */
+    .robot-panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .robot-card {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 18px;
+      border-radius: 16px;
+      backdrop-filter: blur(6px);
+    }
+    .robot-stage {
+      height: 340px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .robot-3d {
+      width: 220px;
+      height: 260px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: translateZ(0);
+      animation: robotRotate 8s ease-in-out infinite;
+    }
+    @keyframes robotRotate {
+      0% { transform: rotateY(0) translateY(0); }
+      50% { transform: rotateY(12deg) translateY(-8px); }
+      100% { transform: rotateY(0) translateY(0); }
+    }
+    .robot-shell {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 220px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, var(--accent), #00b4ff);
+      box-shadow: 0 20px 60px rgba(124, 92, 255, 0.14);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      transition: all 0.3s ease;
+    }
+    .robot-shell.listening {
+      box-shadow: 0 0 30px var(--accent-glow);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 10px var(--accent-glow); }
+      50% { box-shadow: 0 0 30px var(--accent-glow); }
+      100% { box-shadow: 0 0 10px var(--accent-glow); }
+    }
+    .robot-shell .visor {
+      width: 120px;
+      height: 34px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .robot-shell .visor .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #071022;
+      box-shadow: 0 0 14px rgba(255, 255, 255, 0.25);
+    }
+    .robot-shell .chest {
+      width: 140px;
+      height: 60px;
+      margin-top: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .robot-shadow {
+      width: 160px;
+      height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(2, 6, 23, 0.5), transparent);
+      filter: blur(6px);
+      margin-top: 8px;
+      opacity: 0.9;
+    }
+
+    /* Resume Builder Panel */
+    .resume-builder {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      position: relative;
+      overflow: hidden;
+    }
+    .resume-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .resume-header h2 {
+      font-family: 'Montserrat';
+      margin: 0;
+      font-size: 1.4rem;
+    }
+    .resume-controls {
+      display: flex;
+      gap: 10px;
+    }
+    .resume-controls button {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(90deg, var(--accent), #00b4ff);
+      color: #071022;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .resume-controls button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    .resume-controls button:active {
+      transform: translateY(0);
+    }
+    .resume-controls button.secondary {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--muted);
+    }
+
+    /* Resume Sections */
+    .resume-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    .resume-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.3s ease;
+    }
+    .resume-section:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .section-header h3 {
+      font-family: 'Montserrat';
+      font-size: 1.1rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-toggle {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .section-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    .form-group label {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.3);
+      color: inherit;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(124, 92, 255, 0.2);
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .add-item {
+      background: transparent;
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      color: var(--muted);
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+      transition: all 0.3s ease;
+    }
+    .add-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .item-container {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .item-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .item-row input {
+      flex: 1;
+    }
+    .remove-item {
+      background: transparent;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    /* Preview Panel */
+    .preview-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--card);
+      z-index: 10;
+      padding: 24px;
+      overflow-y: auto;
+      display: none;
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .preview-content {
+      background: white;
+      color: #333;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      min-height: 800px;
+    }
+    .preview-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    /* Template Styles */
+    .template-option {
+      border: 2px solid;
+      border-radius: 10px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(255,255,255,0.05);
+    }
+    
+    .template-option:hover, .template-quick:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .template-quick {
+      transition: all 0.3s ease;
+      border: 1px solid;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    /* Blobs + particles behind */
+    .blobs {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .blob {
+      position: absolute;
+      filter: blur(44px);
+      opacity: 0.85;
+      border-radius: 50%;
+      mix-blend-mode: screen;
+    }
+    .blob.b1 {
+      width: 420px;
+      height: 420px;
+      left: -120px;
+      top: -120px;
+      background: linear-gradient(135deg, var(--accent), #2dd4bf);
+    }
+    .blob.b2 {
+      width: 380px;
+      height: 380px;
+      right: -80px;
+      bottom: -80px;
+      background: linear-gradient(135deg, #00b4ff, #7c5cff);
+    }
+    canvas#particles {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+      opacity: 0.12;
+    }
+
+    /* Responsive */
+    @media (max-width: 980px) {
+      .container {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+      .robot-stage {
+        height: 240px;
+      }
+      .resume-builder {
+        height: 520px;
+      }
+      .section-content {
+        grid-template-columns: 1fr;
+      }
+      .templates-grid {
+        grid-template-columns: 1fr !important;
+      }
+      #templates-content {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+  </div>
+  <canvas id="particles"></canvas>
+
+  <header>
+    <div class="logo"><i class="fas fa-file-alt" style="color:var(--accent)"></i><h1>AI Resume Builder</h1></div>
+  </header>
+
+  <div class="container">
+    <aside class="robot-panel">
+      <div class="robot-card">
+        <div class="robot-stage">
+          <div class="robot-3d" aria-hidden>
+            <div class="robot-shell">
+              <div class="visor"><div class="dot"></div></div>
+              <div class="chest"><div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.08)"></div><div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.06)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="robot-shadow" aria-hidden></div>
+      </div>
+      <div style="width:100%;text-align:center;margin-top:8px">
+        <strong style="color:#fff">Astra — Resume Assistant</strong>
+        <div style="color:var(--muted);font-size:0.9rem;margin-top:6px">AI-powered resume optimization & career guidance</div>
+      </div>
+    </aside>
+
+    <main class="resume-builder" role="main">
+      <div class="resume-header">
+        <h2>Resume Builder</h2>
+        <div class="resume-controls">
+          <button id="preview-btn"><i class="fas fa-eye"></i> Preview</button>
+          <button id="export-btn"><i class="fas fa-download"></i> Export</button>
+          <button class="secondary" id="templates-btn"><i class="fas fa-palette"></i> Templates</button>
+          <button class="back" onclick="go('index.html')"><i class="fas fa-arrow-left"></i> Home</button>
+         
+        </div>
+      </div>
+
+      <div class="resume-sections">
+        <!-- Personal Information -->
+        <div class="resume-section">
+          <div class="section-header">
+            <h3><i class="fas fa-user"></i> Personal Information</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="form-group">
+              <label for="full-name">Full Name</label>
+              <input type="text" id="full-name" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+              <label for="job-title">Professional Title</label>
+              <input type="text" id="job-title" placeholder="Software Engineer">
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" placeholder="john.doe@example.com">
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input type="tel" id="phone" placeholder="+91 0123-456-789">
+            </div>
+            <div class="form-group full-width">
+              <label for="location">Location</label>
+              <input type="text" id="location" placeholder="City, Country">
+            </div>
+            <div class="form-group full-width">
+              <label for="summary">Professional Summary</label>
+              <textarea id="summary" placeholder="Brief overview of your experience and skills..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Work Experience -->
+        <div class="resume-section">
+          <div class="section-header">
+            <h3><i class="fas fa-briefcase"></i> Work Experience</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="item-container" id="experience-container">
+              <div class="experience-item">
+                <div class="item-row">
+                  <input type="text" placeholder="Job Title" class="exp-title">
+                  <input type="text" placeholder="Company" class="exp-company">
+                  <input type="text" placeholder="Dates (e.g., 2020 - Present)" class="exp-dates">
+                  <button class="remove-item"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="form-group full-width">
+                  <textarea placeholder="Responsibilities and achievements..." class="exp-description"></textarea>
+                </div>
+              </div>
+            </div>
+            <button class="add-item" id="add-experience"><i class="fas fa-plus"></i> Add Experience</button>
+          </div>
+        </div>
+
+        <!-- Education -->
+        <div class="resume-section">
+          <div class="section-header">
+            <h3><i class="fas fa-graduation-cap"></i> Education</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="item-container" id="education-container">
+              <div class="education-item">
+                <div class="item-row">
+                  <input type="text" placeholder="Degree" class="edu-degree">
+                  <input type="text" placeholder="Institution" class="edu-institution">
+                  <input type="text" placeholder="Dates (e.g., 2016 - 2020)" class="edu-dates">
+                  <button class="remove-item"><i class="fas fa-times"></i></button>
+                </div>
+              </div>
+            </div>
+            <button class="add-item" id="add-education"><i class="fas fa-plus"></i> Add Education</button>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="resume-section">
+          <div class="section-header">
+            <h3><i class="fas fa-tools"></i> Skills</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="form-group full-width">
+              <label for="skills">Skills (comma separated)</label>
+              <textarea id="skills" placeholder="JavaScript, React, Node.js, Python, SQL..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Projects -->
+        <div class="resume-section">
+          <div class="section-header">
+            <h3><i class="fas fa-project-diagram"></i> Projects</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="item-container" id="projects-container">
+              <div class="project-item">
+                <div class="item-row">
+                  <input type="text" placeholder="Project Name" class="proj-name">
+                  <input type="text" placeholder="Technologies Used" class="proj-tech">
+                  <button class="remove-item"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="form-group full-width">
+                  <textarea placeholder="Project description and your contributions..." class="proj-description"></textarea>
+                </div>
+              </div>
+            </div>
+            <button class="add-item" id="add-project"><i class="fas fa-plus"></i> Add Project</button>
+          </div>
+        </div>
+
+        <!-- Templates Section -->
+        <div class="resume-section">
+          <div class="section-header">
+            <h3><i class="fas fa-palette"></i> Resume Templates</h3>
+            <button class="section-toggle"><i class="fas fa-chevron-down"></i></button>
+          </div>
+          <div class="section-content">
+            <div class="form-group full-width">
+              <label>Choose a Template Style</label>
+              <div class="templates-grid" id="templates-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px;">
+                <!-- Templates will be added here by JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Panel -->
+      <div class="preview-panel" id="preview-panel">
+        <div class="preview-header">
+          <h2>Resume Preview</h2>
+          <button class="preview-close" id="preview-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="preview-content" id="preview-content">
+          <!-- Preview content will be generated here -->
+        </div>
+      </div>
+
+      <!-- Templates Panel -->
+      <div class="preview-panel" id="templates-panel">
+        <div class="preview-header">
+          <h2>Choose Resume Template</h2>
+          <button class="preview-close" id="templates-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="preview-content" id="templates-content" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 20px;">
+          <!-- Template options will go here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Particles background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    
+    function resize() {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+    }
+    
+    addEventListener('resize', resize);
+    resize();
+    
+    const particles = [];
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.6 + 0.4,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25
+      });
+    }
+    
+    function tick() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(180, 200, 255, 0.03)';
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+
+    // Resume Builder Functionality - FIXED VERSION
+    const previewBtn = document.getElementById('preview-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const templatesBtn = document.getElementById('templates-btn');
+    const previewPanel = document.getElementById('preview-panel');
+    const previewClose = document.getElementById('preview-close');
+    const previewContent = document.getElementById('preview-content');
+    const templatesPanel = document.getElementById('templates-panel');
+    const templatesClose = document.getElementById('templates-close');
+    const templatesContent = document.getElementById('templates-content');
+    const templatesGrid = document.getElementById('templates-grid');
+    const robotShell = document.querySelector('.robot-shell');
+    
+    // Template definitions
+    const resumeTemplates = [
+      {
+        id: 'modern',
+        name: 'Modern',
+        description: 'Clean and professional design with modern layout',
+        color: '#7c5cff',
+        accentColor: '#00b4ff'
+      },
+      {
+        id: 'professional',
+        name: 'Professional', 
+        description: 'Traditional corporate style for formal applications',
+        color: '#2dd4bf',
+        accentColor: '#0f766e'
+      },
+      {
+        id: 'creative',
+        name: 'Creative',
+        description: 'Modern with creative elements for design roles',
+        color: '#ff5c8d',
+        accentColor: '#be185d'
+      }
+    ];
+
+    let currentTemplate = resumeTemplates[0]; // Default template
+    
+    // Initialize templates
+    function initializeTemplates() {
+      // Add templates to the main templates panel
+      templatesContent.innerHTML = resumeTemplates.map(template => `
+        <div class="template-option" data-template="${template.id}" 
+             style="border-color: ${template.color}">
+          <div style="height: 120px; background: ${template.color}; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <h4 style="margin: 0 0 5px 0; color: white;">${template.name}</h4>
+          <p style="margin: 0; font-size: 0.8rem; color: var(--muted);">${template.description}</p>
+        </div>
+      `).join('');
+
+      // Add quick template selection to the templates section
+      templatesGrid.innerHTML = resumeTemplates.map(template => `
+        <div class="template-quick" data-template="${template.id}" 
+             style="border-color: ${template.color}">
+          <div style="height: 60px; background: ${template.color}; border-radius: 5px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <span style="font-size: 0.8rem;">${template.name}</span>
+        </div>
+      `).join('');
+    }
+
+    // Template selection handlers
+    function setupTemplateHandlers() {
+      // Quick template selection
+      document.querySelectorAll('.template-quick').forEach(template => {
+        template.addEventListener('click', function() {
+          const templateId = this.getAttribute('data-template');
+          applyTemplate(templateId);
+          
+          // Visual feedback
+          this.style.transform = 'scale(0.95)';
+          this.style.background = 'rgba(124, 92, 255, 0.1)';
+          setTimeout(() => {
+            this.style.transform = 'scale(1)';
+            this.style.background = '';
+          }, 300);
+        });
+      });
+
+      // Full template selection
+      document.querySelectorAll('.template-option').forEach(template => {
+        template.addEventListener('click', function() {
+          const templateId = this.getAttribute('data-template');
+          applyTemplate(templateId);
+          templatesPanel.style.display = 'none';
+        });
+      });
+    }
+
+    // Apply template function
+    function applyTemplate(templateId) {
+      const template = resumeTemplates.find(t => t.id === templateId);
+      if (!template) return;
+
+      // Update current template
+      currentTemplate = template;
+      
+      // Show success message
+      showTemplateAppliedMessage(template.name);
+      
+      // Animate robot
+      animateRobot();
+    }
+
+    // Show template applied message
+    function showTemplateAppliedMessage(templateName) {
+      // Create notification
+      const notification = document.createElement('div');
+      notification.innerHTML = `
+        <div style="position: fixed; top: 20px; right: 20px; background: var(--success); color: white; padding: 12px 20px; border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+          <i class="fas fa-check"></i> ${templateName} template applied!
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Initialize remove buttons for existing items
+    document.querySelectorAll('.remove-item').forEach(button => {
+      button.addEventListener('click', function() {
+        this.closest('.experience-item, .education-item, .project-item').remove();
+      });
+    });
+    
+    // Toggle section content
+    document.querySelectorAll('.section-toggle').forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        const section = e.target.closest('.resume-section');
+        const content = section.querySelector('.section-content');
+        const icon = section.querySelector('.section-toggle i');
+        
+        if (content.style.display === 'none') {
+          content.style.display = 'grid';
+          icon.className = 'fas fa-chevron-down';
+        } else {
+          content.style.display = 'none';
+          icon.className = 'fas fa-chevron-right';
+        }
+      });
+    });
+    
+    // Add experience functionality - FIXED
+    document.getElementById('add-experience').addEventListener('click', () => {
+      const container = document.getElementById('experience-container');
+      const newItem = document.createElement('div');
+      newItem.className = 'experience-item';
+      newItem.innerHTML = `
+        <div class="item-row">
+          <input type="text" placeholder="Job Title" class="exp-title">
+          <input type="text" placeholder="Company" class="exp-company">
+          <input type="text" placeholder="Dates (e.g., 2020 - Present)" class="exp-dates">
+          <button class="remove-item"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="form-group full-width">
+          <textarea placeholder="Responsibilities and achievements..." class="exp-description"></textarea>
+        </div>
+      `;
+      
+      container.appendChild(newItem);
+      
+      // Add remove functionality to the new item
+      newItem.querySelector('.remove-item').addEventListener('click', function() {
+        this.closest('.experience-item').remove();
+      });
+      
+      // Animate robot when adding items
+      animateRobot();
+    });
+    
+    // Add education functionality - FIXED
+    document.getElementById('add-education').addEventListener('click', () => {
+      const container = document.getElementById('education-container');
+      const newItem = document.createElement('div');
+      newItem.className = 'education-item';
+      newItem.innerHTML = `
+        <div class="item-row">
+          <input type="text" placeholder="Degree" class="edu-degree">
+          <input type="text" placeholder="Institution" class="edu-institution">
+          <input type="text" placeholder="Dates (e.g., 2016 - 2020)" class="edu-dates">
+          <button class="remove-item"><i class="fas fa-times"></i></button>
+        </div>
+      `;
+      
+      container.appendChild(newItem);
+      
+      // Add remove functionality to the new item
+      newItem.querySelector('.remove-item').addEventListener('click', function() {
+        this.closest('.education-item').remove();
+      });
+      
+      // Animate robot when adding items
+      animateRobot();
+    });
+    
+    // Add project functionality - FIXED
+    document.getElementById('add-project').addEventListener('click', () => {
+      const container = document.getElementById('projects-container');
+      const newItem = document.createElement('div');
+      newItem.className = 'project-item';
+      newItem.innerHTML = `
+        <div class="item-row">
+          <input type="text" placeholder="Project Name" class="proj-name">
+          <input type="text" placeholder="Technologies Used" class="proj-tech">
+          <button class="remove-item"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="form-group full-width">
+          <textarea placeholder="Project description and your contributions..." class="proj-description"></textarea>
+        </div>
+      `;
+      
+      container.appendChild(newItem);
+      
+      // Add remove functionality to the new item
+      newItem.querySelector('.remove-item').addEventListener('click', function() {
+        this.closest('.project-item').remove();
+      });
+      
+      // Animate robot when adding items
+      animateRobot();
+    });
+    
+    // Preview functionality - FIXED
+    previewBtn.addEventListener('click', () => {
+      generatePreview();
+      previewPanel.style.display = 'block';
+    });
+    
+    previewClose.addEventListener('click', () => {
+      previewPanel.style.display = 'none';
+    });
+
+    // Templates panel functionality
+    templatesBtn.addEventListener('click', () => {
+      templatesPanel.style.display = 'block';
+    });
+
+    templatesClose.addEventListener('click', () => {
+      templatesPanel.style.display = 'none';
+    });
+    
+    // Export functionality - FIXED
+    exportBtn.addEventListener('click', () => {
+      exportResume();
+    });
+    
+    // Generate preview content - FIXED with templates
+    function generatePreview() {
+      const name = document.getElementById('full-name').value || 'Your Name';
+      const title = document.getElementById('job-title').value || 'Professional Title';
+      const email = document.getElementById('email').value || 'email@example.com';
+      const phone = document.getElementById('phone').value || '+1 (555) 123-4567';
+      const location = document.getElementById('location').value || 'City, Country';
+      const summary = document.getElementById('summary').value || 'Professional summary goes here...';
+      const skills = document.getElementById('skills').value || 'Skills listed here...';
+      
+      // Generate content with template styling
+      previewContent.innerHTML = generateTemplateHTML(name, title, email, phone, location, summary, skills);
+    }
+
+    function generateTemplateHTML(name, title, email, phone, location, summary, skills) {
+      // Get experiences
+      let experiencesHTML = '';
+      document.querySelectorAll('.experience-item').forEach((item, index) => {
+        const jobTitle = item.querySelector('.exp-title').value || 'Job Title';
+        const company = item.querySelector('.exp-company').value || 'Company';
+        const dates = item.querySelector('.exp-dates').value || 'Dates';
+        const description = item.querySelector('.exp-description').value || 'Responsibilities and achievements...';
+        
+        experiencesHTML += `
+          <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+              <strong style="font-size: 1.1em;">${jobTitle}</strong>
+              <span style="color: ${currentTemplate.accentColor}; font-weight: 500;">${dates}</span>
+            </div>
+            <div style="color: ${currentTemplate.color}; margin-bottom: 8px; font-weight: 500;">${company}</div>
+            <div style="line-height: 1.5;">${description}</div>
+          </div>
+        `;
+      });
+      
+      // Get education
+      let educationHTML = '';
+      document.querySelectorAll('.education-item').forEach((item, index) => {
+        const degree = item.querySelector('.edu-degree').value || 'Degree';
+        const institution = item.querySelector('.edu-institution').value || 'Institution';
+        const dates = item.querySelector('.edu-dates').value || 'Dates';
+        
+        educationHTML += `
+          <div style="margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between;">
+              <strong>${degree}</strong>
+              <span style="color: ${currentTemplate.accentColor};">${dates}</span>
+            </div>
+            <div style="color: ${currentTemplate.color};">${institution}</div>
+          </div>
+        `;
+      });
+      
+      // Get projects
+      let projectsHTML = '';
+      document.querySelectorAll('.project-item').forEach((item, index) => {
+        const projectName = item.querySelector('.proj-name').value || 'Project Name';
+        const technologies = item.querySelector('.proj-tech').value || 'Technologies Used';
+        const description = item.querySelector('.proj-description').value || 'Project description...';
+        
+        projectsHTML += `
+          <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${currentTemplate.color};">
+            <strong style="display: block; margin-bottom: 5px;">${projectName}</strong>
+            <div style="color: ${currentTemplate.accentColor}; margin-bottom: 8px; font-size: 0.9em;">${technologies}</div>
+            <div style="line-height: 1.5;">${description}</div>
+          </div>
+        `;
+      });
+
+      // Template-specific layouts
+      const templateLayouts = {
+        modern: `
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto;">
+            <header style="border-bottom: 3px solid ${currentTemplate.color}; padding-bottom: 25px; margin-bottom: 25px; text-align: center;">
+              <h1 style="color: #333; margin: 0 0 10px 0; font-size: 2.8rem; font-weight: 700;">${name}</h1>
+              <h2 style="color: ${currentTemplate.color}; margin: 0 0 15px 0; font-weight: 500; font-size: 1.4rem;">${title}</h2>
+              <div style="display: flex; justify-content: center; gap: 30px; color: #666; font-size: 0.95rem;">
+                <span><i class="fas fa-envelope"></i> ${email}</span>
+                <span><i class="fas fa-phone"></i> ${phone}</span>
+                <span><i class="fas fa-map-marker-alt"></i> ${location}</span>
+              </div>
+            </header>
+            
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: ${currentTemplate.color}; border-bottom: 2px solid ${currentTemplate.accentColor}; padding-bottom: 8px; margin-bottom: 15px;">PROFESSIONAL SUMMARY</h3>
+              <p style="line-height: 1.6; font-size: 1.05rem;">${summary}</p>
+            </section>
+            
+            ${experiencesHTML ? `
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: ${currentTemplate.color}; border-bottom: 2px solid ${currentTemplate.accentColor}; padding-bottom: 8px; margin-bottom: 15px;">WORK EXPERIENCE</h3>
+              ${experiencesHTML}
+            </section>
+            ` : ''}
+            
+            ${educationHTML ? `
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: ${currentTemplate.color}; border-bottom: 2px solid ${currentTemplate.accentColor}; padding-bottom: 8px; margin-bottom: 15px;">EDUCATION</h3>
+              ${educationHTML}
+            </section>
+            ` : ''}
+            
+            ${skills ? `
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: ${currentTemplate.color}; border-bottom: 2px solid ${currentTemplate.accentColor}; padding-bottom: 8px; margin-bottom: 15px;">SKILLS</h3>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${skills.split(',').map(skill => `
+                  <span style="background: ${currentTemplate.color}; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9em;">${skill.trim()}</span>
+                `).join('')}
+              </div>
+            </section>
+            ` : ''}
+            
+            ${projectsHTML ? `
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: ${currentTemplate.color}; border-bottom: 2px solid ${currentTemplate.accentColor}; padding-bottom: 8px; margin-bottom: 15px;">PROJECTS</h3>
+              ${projectsHTML}
+            </section>
+            ` : ''}
+          </div>
+        `,
+        professional: `
+          <div style="font-family: 'Georgia', serif; max-width: 800px; margin: 0 auto;">
+            <header style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #ddd;">
+              <h1 style="color: #2c3e50; margin: 0 0 5px 0; font-size: 2.5rem; font-weight: normal;">${name}</h1>
+              <h2 style="color: ${currentTemplate.color}; margin: 0 0 15px 0; font-weight: normal; font-size: 1.3rem;">${title}</h2>
+              <div style="color: #7f8c8d; font-size: 0.95rem;">
+                ${email} • ${phone} • ${location}
+              </div>
+            </header>
+            
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: #2c3e50; border-left: 4px solid ${currentTemplate.color}; padding-left: 15px; margin-bottom: 15px;">PROFESSIONAL PROFILE</h3>
+              <p style="line-height: 1.6; text-align: justify;">${summary}</p>
+            </section>
+            
+            ${experiencesHTML ? `
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: #2c3e50; border-left: 4px solid ${currentTemplate.color}; padding-left: 15px; margin-bottom: 15px;">PROFESSIONAL EXPERIENCE</h3>
+              ${experiencesHTML}
+            </section>
+            ` : ''}
+            
+            ${educationHTML ? `
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: #2c3e50; border-left: 4px solid ${currentTemplate.color}; padding-left: 15px; margin-bottom: 15px;">EDUCATION</h3>
+              ${educationHTML}
+            </section>
+            ` : ''}
+            
+            ${skills ? `
+            <section style="margin-bottom: 25px;">
+              <h3 style="color: #2c3e50; border-left: 4px solid ${currentTemplate.color}; padding-left: 15px; margin-bottom: 15px;">TECHNICAL SKILLS</h3>
+              <p>${skills}</p>
+            </section>
+            ` : ''}
+          </div>
+        `,
+        creative: `
+          <div style="font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto;">
+            <header style="background: linear-gradient(135deg, ${currentTemplate.color}, ${currentTemplate.accentColor}); color: white; padding: 40px 30px; margin-bottom: 30px; border-radius: 10px; text-align: center;">
+              <h1 style="margin: 0 0 10px 0; font-size: 3rem; font-weight: 700;">${name}</h1>
+              <h2 style="margin: 0; font-weight: 300; font-size: 1.5rem;">${title}</h2>
+              <div style="display: flex; justify-content: center; gap: 25px; margin-top: 20px; font-size: 1rem;">
+                <span><i class="fas fa-envelope"></i> ${email}</span>
+                <span><i class="fas fa-phone"></i> ${phone}</span>
+                <span><i class="fas fa-map-marker-alt"></i> ${location}</span>
+              </div>
+            </header>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+              <div>
+                <section style="margin-bottom: 25px;">
+                  <h3 style="color: ${currentTemplate.color}; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 2px dashed ${currentTemplate.accentColor};">ABOUT ME</h3>
+                  <p style="line-height: 1.6;">${summary}</p>
+                </section>
+                
+                ${skills ? `
+                <section style="margin-bottom: 25px;">
+                  <h3 style="color: ${currentTemplate.color}; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 2px dashed ${currentTemplate.accentColor};">SKILLS</h3>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    ${skills.split(',').map(skill => `
+                      <span style="background: ${currentTemplate.accentColor}; color: white; padding: 4px 10px; border-radius: 15px; font-size: 0.85em;">${skill.trim()}</span>
+                    `).join('')}
+                  </div>
+                </section>
+                ` : ''}
+                
+                ${educationHTML ? `
+                <section style="margin-bottom: 25px;">
+                  <h3 style="color: ${currentTemplate.color}; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 2px dashed ${currentTemplate.accentColor};">EDUCATION</h3>
+                  ${educationHTML}
+                </section>
+                ` : ''}
+              </div>
+              
+              <div>
+                ${experiencesHTML ? `
+                <section style="margin-bottom: 25px;">
+                  <h3 style="color: ${currentTemplate.color}; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 2px dashed ${currentTemplate.accentColor};">EXPERIENCE</h3>
+                  ${experiencesHTML}
+                </section>
+                ` : ''}
+                
+                ${projectsHTML ? `
+                <section style="margin-bottom: 25px;">
+                  <h3 style="color: ${currentTemplate.color}; padding-bottom: 8px; margin-bottom: 15px; border-bottom: 2px dashed ${currentTemplate.accentColor};">PROJECTS</h3>
+                  ${projectsHTML}
+                </section>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `
+      };
+      
+      return templateLayouts[currentTemplate.id] || templateLayouts.modern;
+    }
+    
+    // Export resume function - FIXED
+    function exportResume() {
+      generatePreview(); // Update preview content first
+      
+      const resumeContent = previewContent.innerText;
+      
+      // Create a blob and download link
+      const blob = new Blob([resumeContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const name = document.getElementById('full-name').value || 'resume';
+      a.download = `${name.replace(/\s+/g, '_')}_resume.txt`;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Show success feedback
+      const originalText = exportBtn.innerHTML;
+      exportBtn.innerHTML = '<i class="fas fa-check"></i> Exported!';
+      setTimeout(() => {
+        exportBtn.innerHTML = originalText;
+      }, 2000);
+    }
+    
+    function animateRobot() {
+      robotShell.animate([
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-6px)' },
+        { transform: 'translateY(0)' }
+      ], {
+        duration: 500,
+        iterations: 1
+      });
+    }
+    
+    // Initialize templates
+    initializeTemplates();
+    setupTemplateHandlers();
+
+
+
+
+
+     
+   // Go to page function
+function go(page) {
+  // Show confirmation before leaving
+  const confirmLeave = confirm('Are you sure you want to go back to home? Your resume data will be saved.');
+  if (confirmLeave) {
+    window.location.href = page;
+  }
+}
+  </script>
+</body>
+</html>
