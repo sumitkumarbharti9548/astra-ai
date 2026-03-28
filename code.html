@@ -6,616 +6,597 @@
   <title>AI Code Editor</title>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Pyodide: runs Python 100% in the browser via WebAssembly -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
   <style>
     :root {
-      --bg: #07070a;
-      --card: #0f1115;
-      --muted: #9aa4b2;
-      --accent: #7c5cff;
-      --accent-glow: rgba(124, 92, 255, 0.6);
-      --glass: rgba(255, 255, 255, 0.03);
-      --success: #00d9a6;
-      --danger: #ff5c8d;
-      --warning: #ffd166;
+      --bg: #07070a; --muted: #9aa4b2; --accent: #7c5cff;
+      --accent-glow: rgba(124,92,255,0.6);
+      --success: #00d9a6; --danger: #ff5c8d; --warning: #ffd166;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
-      font-family: 'Poppins', system-ui, Segoe UI, Roboto, Arial;
-      background: radial-gradient(900px 400px at 8% 12%, rgba(124,92,255,0.12), transparent),
-                  radial-gradient(700px 350px at 92% 88%, rgba(0,180,255,0.05), transparent),
-                  var(--bg);
-      color: #e6eef8;
-      overflow-x: hidden;
+      font-family: 'Poppins', system-ui, sans-serif;
+      background:
+        radial-gradient(900px 400px at 8% 12%, rgba(124,92,255,0.12), transparent),
+        radial-gradient(700px 350px at 92% 88%, rgba(0,180,255,0.05), transparent), #07070a;
+      color: #e6eef8; overflow-x: hidden;
     }
-    .container {
-      max-width: 1400px;
-      margin: 28px auto;
-      padding: 72px 28px 28px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 28px;
-      align-items: start;
-    }
-    header {
-      position: fixed;
-      left: 20px;
-      top: 18px;
-      z-index: 90;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    header .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    header { position: fixed; left: 20px; top: 18px; z-index: 90; }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
       background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-      padding: 8px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.04);
+      padding: 8px 14px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
     }
-    header h1 { font-family: 'Montserrat'; font-size: 1rem; margin: 0; }
+    .logo h1 { font-family: 'Montserrat'; font-size: 1rem; }
 
-    /* Robot Panel */
-    .robot-panel {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
+    .container {
+      max-width: 1400px; margin: 0 auto;
+      padding: 76px 28px 28px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start;
     }
+
+    /* Robot */
+    .robot-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; }
     .robot-card {
       width: 100%;
       background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 18px;
-      border-radius: 16px;
-      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.05); padding: 18px; border-radius: 16px;
     }
-    .robot-stage {
-      height: 340px;
-      display: grid;
-      place-items: center;
-      position: relative;
-    }
+    .robot-stage { height: 280px; display: grid; place-items: center; }
     .robot-3d {
-      width: 220px;
-      height: 260px;
-      position: relative;
+      width: 190px; height: 230px; position: relative;
       transform-style: preserve-3d;
-      animation: robotRotate 8s ease-in-out infinite;
+      animation: robotFloat 6s ease-in-out infinite;
     }
-    @keyframes robotRotate {
-      0%   { transform: rotateY(0)    translateY(0); }
-      50%  { transform: rotateY(12deg) translateY(-8px); }
-      100% { transform: rotateY(0)    translateY(0); }
+    @keyframes robotFloat {
+      0%,100% { transform: rotateY(0deg) translateY(0px); }
+      50%      { transform: rotateY(10deg) translateY(-10px); }
     }
     .robot-shell {
-      position: absolute;
-      left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      width: 200px; height: 220px;
-      border-radius: 20px;
-      background: linear-gradient(180deg, var(--accent), #00b4ff);
-      box-shadow: 0 20px 60px rgba(124,92,255,0.14);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-      transition: all 0.3s ease;
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+      width: 175px; height: 195px; border-radius: 20px;
+      background: linear-gradient(160deg, var(--accent), #00b4ff);
+      box-shadow: 0 20px 60px rgba(124,92,255,0.18);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 18px;
     }
-    .robot-shell.executing {
-      box-shadow: 0 0 30px var(--accent-glow);
-      animation: pulse 1.5s infinite;
+    .robot-shell.executing { animation: robotPulse 1.2s infinite; }
+    @keyframes robotPulse {
+      0%,100% { box-shadow: 0 0 10px var(--accent-glow); }
+      50%      { box-shadow: 0 0 36px var(--accent-glow); }
     }
-    @keyframes pulse {
-      0%   { box-shadow: 0 0 10px var(--accent-glow); }
-      50%  { box-shadow: 0 0 30px var(--accent-glow); }
-      100% { box-shadow: 0 0 10px var(--accent-glow); }
+    .visor {
+      width: 108px; height: 30px; border-radius: 18px;
+      background: rgba(255,255,255,0.92);
+      display: flex; align-items: center; justify-content: center; gap: 18px;
     }
-    .robot-shell .visor {
-      width: 120px; height: 34px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.95);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+    .vdot { width: 11px; height: 11px; border-radius: 50%; background: #071022; }
+    .chest {
+      width: 128px; height: 52px; margin-top: 12px;
+      background: rgba(255,255,255,0.04); border-radius: 10px;
+      display: flex; align-items: center; justify-content: space-around;
+      border: 1px solid rgba(255,255,255,0.05);
     }
-    .robot-shell .visor .dot {
-      width: 12px; height: 12px;
-      border-radius: 50%;
-      background: #071022;
-      box-shadow: 0 0 14px rgba(255,255,255,0.25);
-    }
-    .robot-shell .chest {
-      width: 140px; height: 60px;
-      margin-top: 12px;
-      background: rgba(255,255,255,0.03);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-    .robot-shadow {
-      width: 160px; height: 18px;
-      border-radius: 50%;
-      background: radial-gradient(ellipse at center, rgba(2,6,23,0.5), transparent);
-      filter: blur(6px);
-      margin-top: 8px;
-      opacity: 0.9;
-    }
+    .cdot { width: 11px; height: 11px; border-radius: 50%; }
 
-    /* Editor Panel */
+    /* Engine badges */
+    .badge {
+      width: 100%; border-radius: 13px; padding: 11px 14px;
+      display: flex; align-items: center; gap: 11px;
+    }
+    .badge.green {
+      background: linear-gradient(180deg,rgba(0,217,166,0.07),transparent);
+      border: 1px solid rgba(0,217,166,0.18);
+    }
+    .badge.blue {
+      background: linear-gradient(180deg,rgba(0,180,255,0.07),transparent);
+      border: 1px solid rgba(0,180,255,0.18);
+    }
+    .bdot {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+      animation: blink 2.2s infinite;
+    }
+    .bdot.g { background: var(--success); box-shadow: 0 0 7px var(--success); }
+    .bdot.b { background: #00b4ff;        box-shadow: 0 0 7px #00b4ff; }
+    .bdot.y { background: var(--warning); box-shadow: 0 0 7px var(--warning); animation-delay:.4s }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* Editor */
     .editor-panel { display: flex; flex-direction: column; gap: 20px; }
     .editor-card {
       background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 16px;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      height: 600px;
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
+      padding: 18px; display: flex; flex-direction: column; height: 620px;
     }
-    .editor-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .editor-header h3 { margin: 0; font-family: 'Montserrat'; }
-    .language-selector { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .editor-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .editor-header h3 { font-family: 'Montserrat'; }
+    .lang-bar { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
     .lang-btn {
-      padding: 8px 16px;
-      border-radius: 10px;
+      padding: 6px 14px; border-radius: 10px;
       border: 1px solid rgba(255,255,255,0.1);
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 0.9rem;
+      background: transparent; color: var(--muted);
+      cursor: pointer; font-size: 0.83rem;
+      transition: all .22s; font-family: 'Poppins', sans-serif;
     }
-    .lang-btn:hover { background: rgba(255,255,255,0.05); }
+    .lang-btn:hover { background: rgba(255,255,255,0.06); color: #e6eef8; }
     .lang-btn.active {
       background: linear-gradient(90deg, var(--accent), #00b4ff);
-      color: #071022;
-      border-color: transparent;
+      color: #07070a; border-color: transparent; font-weight: 600;
     }
-    .code-editor {
-      flex: 1;
-      background: rgba(0,0,0,0.3);
-      border-radius: 12px;
-      overflow: hidden;
-    }
+    .code-area { flex:1; background: rgba(0,0,0,0.35); border-radius: 12px; overflow: hidden; }
     #editor {
-      width: 100%; height: 100%;
-      border: none;
-      padding: 16px;
-      font-family: 'Fira Code', 'Courier New', monospace;
-      font-size: 14px;
-      color: #e6eef8;
-      background: transparent;
-      resize: none;
-      outline: none;
-      line-height: 1.6;
+      width: 100%; height: 100%; border: none; padding: 16px;
+      font-family: 'Fira Code','Courier New', monospace;
+      font-size: 13.5px; color: #e6eef8; background: transparent;
+      resize: none; outline: none; line-height: 1.65; tab-size: 4;
     }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 
-    /* Output Panel */
+    /* Output */
     .output-card {
       background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-      border: 1px solid rgba(255,255,255,0.04);
-      border-radius: 16px;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      height: 300px;
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;
+      padding: 18px; display: flex; flex-direction: column; height: 280px;
     }
-    .output-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .output-header h3 { margin: 0; font-family: 'Montserrat'; }
+    .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .output-header h3 { font-family: 'Montserrat'; }
     #output {
-      flex: 1;
-      padding: 16px;
-      font-family: 'Fira Code', 'Courier New', monospace;
-      white-space: pre-wrap;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.3);
-      border-radius: 8px;
-      color: #e6eef8;
-      font-size: 13px;
-      line-height: 1.5;
+      flex: 1; padding: 14px;
+      font-family: 'Fira Code','Courier New', monospace;
+      font-size: 13px; white-space: pre-wrap; overflow-y: auto;
+      background: rgba(0,0,0,0.32); border-radius: 8px;
+      color: #e6eef8; line-height: 1.55;
     }
-    #output iframe {
-      width: 100%; height: 250px; border: none; border-radius: 6px;
-    }
+    #output iframe { width: 100%; height: 230px; border: none; border-radius: 6px; }
 
     /* Buttons */
     button {
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: none;
+      padding: 9px 15px; border-radius: 10px; border: none;
       background: linear-gradient(90deg, var(--accent), #00b4ff);
-      color: #071022;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: 'Poppins', sans-serif;
-      font-size: 0.85rem;
+      color: #07070a; font-weight: 600; cursor: pointer;
+      transition: all .22s; display: flex; align-items: center; gap: 6px;
+      font-family: 'Poppins', sans-serif; font-size: 0.84rem;
     }
-    button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
-    button:active { transform: translateY(0); }
-    button.secondary { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--muted); }
-    button.success   { background: linear-gradient(90deg, var(--success), #00c995); }
-    button.warning   { background: linear-gradient(90deg, var(--warning), #ffc145); }
-    button.danger    { background: linear-gradient(90deg, var(--danger),  #ff6b9d); }
-    .back {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 8px 10px;
-      border-radius: 10px;
-      color: var(--muted);
-      cursor: pointer;
-    }
-    .back:hover { background: rgba(255,255,255,0.05); }
+    button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
+    button:active:not(:disabled) { transform: translateY(0); }
+    button:disabled { opacity: .42; cursor: not-allowed; }
+    .btn-sec  { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--muted); }
+    .btn-ok   { background: linear-gradient(90deg, var(--success), #00c495); }
+    .btn-warn { background: linear-gradient(90deg, var(--warning), #ffc040); }
+    .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.06); color: var(--muted); padding: 7px 11px; }
 
-    /* Status */
-    .status-executing { color: var(--accent); font-weight: bold; }
-    .status-success   { color: var(--success); font-weight: bold; }
-    .status-error     { color: var(--danger);  font-weight: bold; }
+    .s-ok  { color: var(--success); font-weight: 600; }
+    .s-err { color: var(--danger);  font-weight: 600; }
+    .s-run { color: var(--accent);  font-weight: 600; }
+    .s-warn{ color: var(--warning); font-weight: 600; }
 
-    /* Blobs */
+    /* Blobs + particles */
     .blobs { position: fixed; inset: 0; pointer-events: none; z-index: -1; }
-    .blob  { position: absolute; filter: blur(44px); opacity: 0.85; border-radius: 50%; mix-blend-mode: screen; }
-    .blob.b1 { width: 420px; height: 420px; left: -120px; top: -120px; background: linear-gradient(135deg, var(--accent), #2dd4bf); }
-    .blob.b2 { width: 380px; height: 380px; right: -80px; bottom: -80px; background: linear-gradient(135deg, #00b4ff, #7c5cff); }
-    canvas#particles { position: fixed; left: 0; top: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; opacity: 0.12; }
+    .blob  { position: absolute; filter: blur(48px); opacity: .8; border-radius: 50%; mix-blend-mode: screen; }
+    .b1 { width:420px;height:420px;left:-120px;top:-120px;  background:linear-gradient(135deg,var(--accent),#2dd4bf); }
+    .b2 { width:380px;height:380px;right:-80px;bottom:-80px;background:linear-gradient(135deg,#00b4ff,#7c5cff); }
+    canvas#particles { position:fixed;left:0;top:0;width:100%;height:100%;z-index:-2;pointer-events:none;opacity:.12; }
 
-    @media (max-width: 980px) {
-      .container { grid-template-columns: 1fr; }
-      .robot-stage { height: 240px; }
-      .editor-card { height: 500px; }
+    @media(max-width:980px){
+      .container{grid-template-columns:1fr;}
+      .robot-stage{height:210px;}
+      .editor-card{height:520px;}
     }
   </style>
 </head>
 <body>
-  <div class="blobs" aria-hidden>
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
+
+<div class="blobs"><div class="blob b1"></div><div class="blob b2"></div></div>
+<canvas id="particles"></canvas>
+
+<header>
+  <div class="logo">
+    <i class="fas fa-code" style="color:var(--accent)"></i>
+    <h1>AI Code Editor</h1>
   </div>
-  <canvas id="particles"></canvas>
+</header>
 
-  <header>
-    <div class="logo">
-      <i class="fas fa-code" style="color:var(--accent)"></i>
-      <h1>AI Code Editor</h1>
-    </div>
-  </header>
+<div class="container">
 
-  <div class="container">
-    <aside class="robot-panel">
-      <div class="robot-card">
-        <div class="robot-stage">
-          <div class="robot-3d" aria-hidden>
-            <div class="robot-shell" id="robot-shell">
-              <div class="visor"><div class="dot"></div></div>
-              <div class="chest">
-                <div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>
-                <div style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>
-              </div>
+  <!-- LEFT -->
+  <aside class="robot-panel">
+    <div class="robot-card">
+      <div class="robot-stage">
+        <div class="robot-3d">
+          <div class="robot-shell" id="robot-shell">
+            <div class="visor"><div class="vdot"></div><div class="vdot"></div></div>
+            <div class="chest">
+              <div class="cdot" style="background:rgba(255,255,255,0.16)"></div>
+              <div class="cdot" style="background:rgba(255,255,255,0.09)"></div>
+              <div class="cdot" style="background:rgba(255,255,255,0.05)"></div>
             </div>
           </div>
         </div>
-        <div class="robot-shadow" aria-hidden></div>
       </div>
-      <div style="width:100%;text-align:center;margin-top:8px">
-        <strong style="color:#fff">CodeBot — AI Assistant</strong>
-        <div style="color:var(--muted);font-size:0.9rem;margin-top:6px">Real-time code execution with AI assistance</div>
+    </div>
+
+    <div style="text-align:center">
+      <strong style="color:#fff">CodeBot</strong>
+      <div style="color:var(--muted);font-size:0.82rem;margin-top:3px">Your AI code companion</div>
+    </div>
+
+    <!-- Engine badges -->
+    <div class="badge green">
+      <div class="bdot g"></div>
+      <div>
+        <div style="font-size:0.81rem;font-weight:600"><i class="fas fa-microchip" style="color:var(--success);margin-right:4px"></i>Python — Pyodide</div>
+        <div style="font-size:0.73rem;color:var(--muted);margin-top:1px">Runs in your browser · No network needed</div>
       </div>
-    </aside>
+    </div>
+    <div class="badge blue">
+      <div class="bdot b"></div>
+      <div>
+        <div style="font-size:0.81rem;font-weight:600"><i class="fas fa-server" style="color:#00b4ff;margin-right:4px"></i>C / C++ / Java — WandBox</div>
+        <div style="font-size:0.73rem;color:var(--muted);margin-top:1px">Free public compiler API · No key needed</div>
+      </div>
+    </div>
+    <div class="badge" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);">
+      <div class="bdot" style="background:#7c5cff;box-shadow:0 0 7px #7c5cff;"></div>
+      <div>
+        <div style="font-size:0.81rem;font-weight:600"><i class="fas fa-globe" style="color:var(--accent);margin-right:4px"></i>JS / HTML / CSS</div>
+        <div style="font-size:0.73rem;color:var(--muted);margin-top:1px">Runs live in your browser · Instant</div>
+      </div>
+    </div>
 
-    <main class="editor-panel" role="main">
-      <div class="editor-card">
-        <div class="editor-header">
-          <h3>Code Editor</h3>
-          <div style="display:flex;gap:8px;">
-     
-            <button onclick="go('index.html')"><i class="fas fa-arrow-left"></i>Home</button>
-<button onclick="go('assistant.html')"><i class="fas fa-robot"></i>AI Assist</button>
-          </div>
-        </div>
+    <div id="pyodide-status" style="width:100%;background:rgba(255,209,102,0.06);border:1px solid rgba(255,209,102,0.18);border-radius:11px;padding:10px 13px;font-size:0.77rem;color:var(--warning);display:flex;gap:8px;align-items:center;">
+      <i class="fas fa-spinner fa-spin"></i> Loading Python engine (first time only)…
+    </div>
+  </aside>
 
-        <div class="language-selector">
-          <button class="lang-btn active" data-lang="c"><i class="fas fa-code"></i> C</button>
-          <button class="lang-btn" data-lang="cpp"><i class="fas fa-code"></i> C++</button>
-          <button class="lang-btn" data-lang="python"><i class="fab fa-python"></i> Python</button>
-          <button class="lang-btn" data-lang="java"><i class="fab fa-java"></i> Java</button>
-          <button class="lang-btn" data-lang="javascript"><i class="fab fa-js"></i> JavaScript</button>
-          <button class="lang-btn" data-lang="html"><i class="fab fa-html5"></i> HTML</button>
-          <button class="lang-btn" data-lang="css"><i class="fab fa-css3-alt"></i> CSS</button>
-        </div>
-
-        <div class="code-editor">
-          <textarea id="editor" spellcheck="false"></textarea>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-          <button class="success" id="run-btn"><i class="fas fa-play"></i> Run Code</button>
-          <button class="secondary" id="clear-btn"><i class="fas fa-broom"></i> Clear</button>
-          <button class="warning" id="reset-btn"><i class="fas fa-redo"></i> Reset</button>
-          <button class="secondary" id="copy-btn"><i class="fas fa-copy"></i> Copy</button>
+  <!-- RIGHT -->
+  <main class="editor-panel">
+    <div class="editor-card">
+      <div class="editor-header">
+        <h3>Code Editor</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn-ghost" id="ai-assist-btn"><i class="fas fa-robot"></i> AI Assist</button>
         </div>
       </div>
 
-      <div class="output-card">
-        <div class="output-header">
-          <h3>Output</h3>
-          <button class="secondary" id="clear-output"><i class="fas fa-trash"></i> Clear</button>
-        </div>
-        <div id="output"></div>
+      <div class="lang-bar">
+        <button class="lang-btn active" data-lang="c">C</button>
+        <button class="lang-btn" data-lang="cpp">C++</button>
+        <button class="lang-btn" data-lang="python">Python</button>
+        <button class="lang-btn" data-lang="java">Java</button>
+        <button class="lang-btn" data-lang="javascript">JavaScript</button>
+        <button class="lang-btn" data-lang="html">HTML</button>
+        <button class="lang-btn" data-lang="css">CSS</button>
       </div>
-    </main>
-  </div>
 
-  <!-- Templates stored safely in JSON script tags — avoids HTML parser conflicts -->
-  <script id="tpl-c" type="application/json">
-  {
-    "code": "#include <stdio.h>\n\nint main() {\n    printf(\"Hello, AI Code Editor!\\n\");\n    printf(\"Welcome to Programiz Pro\\n\\n\");\n\n    int n = 5, factorial = 1;\n    for(int i = 1; i <= n; i++) factorial *= i;\n    printf(\"Factorial of %d is: %d\\n\", n, factorial);\n    return 0;\n}",
-    "output": "Hello, AI Code Editor!\nWelcome to Programiz Pro\n\nFactorial of 5 is: 120"
-  }
-  </script>
-  <script id="tpl-cpp" type="application/json">
-  {
-    "code": "#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {\n    cout << \"Hello, C++ Developer!\" << endl;\n    cout << \"Welcome to AI Code Editor\" << endl << endl;\n\n    vector<string> languages = {\"C++\", \"Python\", \"Java\", \"JavaScript\"};\n    cout << \"Programming Languages:\" << endl;\n    for(const auto& lang : languages)\n        cout << \"- \" << lang << endl;\n\n    int n = 6;\n    long long factorial = 1;\n    for(int i = 1; i <= n; i++) factorial *= i;\n    cout << endl << \"Factorial of \" << n << \" is: \" << factorial << endl;\n    return 0;\n}",
-    "output": "Hello, C++ Developer!\nWelcome to AI Code Editor\n\nProgramming Languages:\n- C++\n- Python\n- Java\n- JavaScript\n\nFactorial of 6 is: 720"
-  }
-  </script>
-  <script id="tpl-python" type="application/json">
-  {
-    "code": "# Python Example\nprint(\"Hello, Python Developer!\")\nprint(\"Welcome to AI Code Editor\\n\")\n\nnumbers = [x**2 for x in range(1, 11)]\nprint(\"Squared numbers:\", numbers)\n\nperson = {\n    \"name\": \"John Doe\",\n    \"age\": 28,\n    \"skills\": [\"Python\", \"JavaScript\", \"SQL\"]\n}\nprint(\"\\nPerson:\", person)\n\ndef calculate_factorial(n):\n    if n == 0 or n == 1:\n        return 1\n    return n * calculate_factorial(n - 1)\n\nprint(f\"\\nFactorial of 5 is: {calculate_factorial(5)}\")",
-    "output": "Hello, Python Developer!\nWelcome to AI Code Editor\n\nSquared numbers: [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]\n\nPerson: {'name': 'John Doe', 'age': 28, 'skills': ['Python', 'JavaScript', 'SQL']}\n\nFactorial of 5 is: 120"
-  }
-  </script>
-  <script id="tpl-java" type="application/json">
-  {
-    "code": "// Java Example\nimport java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, Java Developer!\");\n        System.out.println(\"Welcome to AI Code Editor\\n\");\n\n        int[] numbers = {12, 45, 23, 67, 34, 89, 56};\n        int sum = 0;\n        for(int num : numbers) sum += num;\n\n        System.out.println(\"Array: \" + Arrays.toString(numbers));\n        System.out.println(\"Sum: \" + sum);\n        System.out.println(\"Average: \" + (double)sum / numbers.length);\n        System.out.println(\"\\nFactorial of 5 is: \" + calculateFactorial(5));\n    }\n\n    public static int calculateFactorial(int n) {\n        if (n == 0 || n == 1) return 1;\n        return n * calculateFactorial(n - 1);\n    }\n}",
-    "output": "Hello, Java Developer!\nWelcome to AI Code Editor\n\nArray: [12, 45, 23, 67, 34, 89, 56]\nSum: 326\nAverage: 46.57142857142857\n\nFactorial of 5 is: 120"
-  }
-  </script>
-  <script id="tpl-javascript" type="application/json">
-  {
-    "code": "// JavaScript Example\nconsole.log(\"Hello, JavaScript Developer!\");\nconsole.log(\"Welcome to AI Code Editor\\n\");\n\nconst fruits = ['Apple', 'Banana', 'Orange', 'Mango'];\nconsole.log('Fruits:', fruits.join(', '));\n\nconst user = {\n    name: 'John Doe',\n    age: 28,\n    profession: 'Developer',\n    skills: ['JavaScript', 'Python', 'React']\n};\nconsole.log('\\nUser Name:', user.name);\nconsole.log('Skills:', user.skills.join(', '));\n\nfunction factorial(n) {\n    if (n === 0 || n === 1) return 1;\n    return n * factorial(n - 1);\n}\nconsole.log('\\nFactorial of 5 is:', factorial(5));",
-    "output": ""
-  }
-  </script>
-  <script id="tpl-html" type="application/json">
-  {
-    "code": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body {\n      font-family: 'Segoe UI', sans-serif;\n      background: linear-gradient(135deg, #1a1d23, #2d3041);\n      color: white;\n      text-align: center;\n      padding: 40px;\n    }\n    h1 { font-size: 2.5rem; color: #7c5cff; margin-bottom: 16px; }\n    .box {\n      background: rgba(255,255,255,0.08);\n      padding: 2rem;\n      border-radius: 15px;\n      max-width: 500px;\n      margin: 0 auto;\n    }\n    button {\n      margin-top: 12px;\n      padding: 10px 24px;\n      background: #7c5cff;\n      color: white;\n      border: none;\n      border-radius: 8px;\n      cursor: pointer;\n      font-size: 1rem;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"box\">\n    <h1>Hello, AI Editor!</h1>\n    <p>Welcome to the HTML preview pane.</p>\n    <button onclick=\"alert('Hello from HTML!')\">Click Me</button>\n  </div>\n</body>\n</html>",
-    "output": ""
-  }
-  </script>
-  <script id="tpl-css" type="application/json">
-  {
-    "code": "/* CSS Example — preview rendered below */\n\n.box {\n  background: linear-gradient(135deg, #7c5cff, #00b4ff);\n  border-radius: 15px;\n  padding: 2rem;\n  color: white;\n  max-width: 420px;\n  margin: 2rem auto;\n  box-shadow: 0 10px 30px rgba(0,0,0,0.3);\n  text-align: center;\n  font-family: 'Segoe UI', sans-serif;\n}\n\n.box h2 {\n  font-size: 1.8rem;\n  margin-bottom: 0.8rem;\n}\n\n.btn {\n  background: rgba(255,255,255,0.2);\n  border: none;\n  padding: 0.7rem 1.4rem;\n  border-radius: 25px;\n  color: white;\n  cursor: pointer;\n  margin-top: 1rem;\n  font-weight: 600;\n  transition: all 0.3s ease;\n}\n\n.btn:hover {\n  background: rgba(255,255,255,0.35);\n  transform: translateY(-2px);\n}",
-    "output": ""
-  }
-  </script>
+      <div class="code-area">
+        <textarea id="editor" spellcheck="false"></textarea>
+      </div>
 
-  <script>
-    // ── Particles ──────────────────────────────────────────────
-    const canvas = document.getElementById('particles');
-    const ctx = canvas.getContext('2d');
-    function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
-    addEventListener('resize', resize);
-    resize();
-    const particles = Array.from({length: 90}, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 1.6 + 0.4,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.25
-    }));
-    function tick() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const p of particles) {
-        p.x = (p.x + p.vx + canvas.width) % canvas.width;
-        p.y = (p.y + p.vy + canvas.height) % canvas.height;
-        ctx.beginPath();
-        ctx.fillStyle = 'rgba(180,200,255,0.6)';
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      requestAnimationFrame(tick);
+      <div class="btn-row">
+        <button class="btn-ok"   id="run-btn"><i class="fas fa-play"></i> Run Code</button>
+        <button class="btn-sec"  id="clear-btn"><i class="fas fa-broom"></i> Clear</button>
+        <button class="btn-warn" id="reset-btn"><i class="fas fa-redo"></i> Reset</button>
+        <button class="btn-sec"  id="copy-btn"><i class="fas fa-copy"></i> Copy</button>
+      </div>
+    </div>
+
+    <!-- stdin input box -->
+    <div style="background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.08);border-radius:13px;padding:13px 15px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="font-size:0.82rem;font-weight:600;display:flex;align-items:center;gap:7px;">
+          <i class="fas fa-keyboard" style="color:var(--accent)"></i> Input (stdin)
+          <span style="font-size:0.72rem;color:var(--muted);font-weight:400;">type inputs here, one per line</span>
+        </label>
+        <button class="btn-sec" id="clear-stdin-btn" style="padding:5px 10px;font-size:0.74rem;"><i class="fas fa-times"></i> Clear</button>
+      </div>
+      <textarea id="stdin-box" rows="3"
+        placeholder="e.g.  3&#10;10 20 30&#10;5"
+        style="width:100%;background:rgba(0,0,0,0.32);border:1px solid rgba(255,255,255,0.07);border-radius:9px;padding:10px 13px;color:#e6eef8;resize:vertical;outline:none;font-family:'Fira Code','Courier New',monospace;font-size:13px;line-height:1.55;"></textarea>
+    </div>
+
+    <div class="output-card">
+      <div class="output-header">
+        <h3>Output</h3>
+        <button class="btn-sec" id="clear-out-btn" style="padding:7px 12px;font-size:0.79rem;">
+          <i class="fas fa-trash"></i> Clear
+        </button>
+      </div>
+      <div id="output"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Code templates — stored as JSON so the HTML parser never misreads them -->
+<script id="T-c" type="application/json">{"code":"#include <stdio.h>\n\nint main() {\n    int n;\n    printf(\"Enter number of elements: \");\n    scanf(\"%d\", &n);\n\n    int arr[100];\n    printf(\"Enter %d elements:\\n\", n);\n    for (int i = 0; i < n; i++) {\n        scanf(\"%d\", &arr[i]);\n    }\n\n    int sum = 0;\n    for (int i = 0; i < n; i++) sum += arr[i];\n\n    printf(\"Array: \");\n    for (int i = 0; i < n; i++) printf(\"%d \", arr[i]);\n    printf(\"\\nSum = %d\\nAverage = %.2f\\n\", sum, (float)sum/n);\n    return 0;\n}\n\n// TIP: Type your inputs in the Input (stdin) box below before clicking Run!\n// Example input:\n//   3\n//   10 20 30"}</script>
+<script id="T-cpp" type="application/json">{"code":"#include <iostream>\n#include <climits>\nusing namespace std;\n\n// unsigned long long handles up to 20! correctly\nunsigned long long factorial(int n) {\n    if (n < 0)  return 0;\n    if (n == 0) return 1;\n    unsigned long long result = 1;\n    for (int i = 1; i <= n; i++) result *= i;\n    return result;\n}\n\nint main() {\n    for (int n = 0; n <= 20; n++) {\n        cout << n << \"! = \" << factorial(n) << endl;\n    }\n    cout << \"\\nNote: C++ overflows beyond 20! Use Python for bigger numbers.\" << endl;\n    return 0;\n}"}</script>
+<script id="T-python" type="application/json">{"code":"# Python reads your Input (stdin) box line by line\n# Type your inputs there before clicking Run!\n\nn = int(input(\"Enter number of elements: \"))\narr = list(map(int, input(\"Enter elements: \").split()))\n\nprint(f\"You entered: {arr}\")\nprint(f\"Sum     = {sum(arr)}\")\nprint(f\"Average = {sum(arr)/len(arr):.2f}\")\nprint(f\"Max     = {max(arr)}\")\nprint(f\"Min     = {min(arr)}\")\n\n# Example Input to type in stdin box:\n# 5\n# 10 20 30 40 50"}</script>
+<script id="T-java" type="application/json">{"code":"import java.math.BigInteger;\n\npublic class Main {\n    // BigInteger handles numbers of ANY size - no overflow!\n    static BigInteger factorial(int n) {\n        BigInteger result = BigInteger.ONE;\n        for (int i = 2; i <= n; i++)\n            result = result.multiply(BigInteger.valueOf(i));\n        return result;\n    }\n\n    public static void main(String[] args) {\n        int[] tests = {5, 10, 20, 50, 66, 100};\n        for (int n : tests) {\n            System.out.println(n + \"! = \" + factorial(n));\n        }\n        System.out.println(\"\\n66! has \" + factorial(66).toString().length() + \" digits!\");\n    }\n}"}</script>
+<script id="T-javascript" type="application/json">{"code":"console.log(\"Hello, JavaScript Developer!\");\n\nconst nums = [1, 2, 3, 4, 5];\nconst squares = nums.map(n => n * n);\nconsole.log(\"Squares:\", squares);\n\nfunction factorial(n) {\n  return n <= 1 ? 1 : n * factorial(n - 1);\n}\nconsole.log(\"Factorial of 5 =\", factorial(5));"}</script>
+<script id="T-html" type="application/json">{"code":"<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: sans-serif; background: #1a1d23; color: white; text-align: center; padding: 40px; }\n    h1 { color: #7c5cff; }\n    button {\n      margin-top: 16px; padding: 10px 24px;\n      background: #7c5cff; color: white;\n      border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;\n    }\n    button:hover { background: #9b7fff; }\n  </style>\n</head>\n<body>\n  <h1>Hello from HTML!</h1>\n  <p>Edit this code and click Run to preview.</p>\n  <button onclick=\"this.textContent='Clicked!'\">Click Me</button>\n</body>\n</html>"}</script>
+<script id="T-css" type="application/json">{"code":"/* Edit this CSS and click Run to see the live preview */\n.card {\n  background: linear-gradient(135deg, #7c5cff, #00b4ff);\n  border-radius: 16px; padding: 2rem;\n  max-width: 340px; margin: 1.5rem auto;\n  text-align: center; color: white;\n  font-family: sans-serif;\n  box-shadow: 0 12px 36px rgba(0,0,0,0.35);\n}\n.card h2 { margin-bottom: 0.5rem; font-size: 1.5rem; }\n.card p  { opacity: 0.85; font-size: 0.9rem; }\n.btn {\n  margin-top: 1rem; padding: 0.7rem 1.6rem;\n  border: none; border-radius: 25px;\n  background: rgba(255,255,255,0.22);\n  color: white; cursor: pointer; font-weight: 600;\n  transition: background .25s, transform .2s;\n}\n.btn:hover { background: rgba(255,255,255,0.38); transform: translateY(-2px); }"}</script>
+
+<script>
+// ── Particles ──────────────────────────────────────────────────────────────
+(function(){
+  const cv = document.getElementById('particles'), cx = cv.getContext('2d');
+  function rs(){ cv.width = innerWidth; cv.height = innerHeight; }
+  addEventListener('resize', rs); rs();
+  const pts = Array.from({length:80}, () => ({
+    x: Math.random()*cv.width, y: Math.random()*cv.height,
+    r: Math.random()*1.4+0.4, vx:(Math.random()-.5)*.2, vy:(Math.random()-.5)*.2
+  }));
+  (function frame(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    for(const p of pts){
+      p.x=(p.x+p.vx+cv.width )%cv.width;
+      p.y=(p.y+p.vy+cv.height)%cv.height;
+      cx.beginPath(); cx.fillStyle='rgba(180,200,255,0.6)';
+      cx.arc(p.x,p.y,p.r,0,Math.PI*2); cx.fill();
     }
-    tick();
+    requestAnimationFrame(frame);
+  })();
+})();
 
-    // ── Load templates from JSON script tags (safe from HTML parser) ──
-    function loadTemplate(id) {
-      const el = document.getElementById('tpl-' + id);
-      return el ? JSON.parse(el.textContent) : { code: '', output: '' };
-    }
-    const templates = {
-      c:          loadTemplate('c'),
-      cpp:        loadTemplate('cpp'),
-      python:     loadTemplate('python'),
-      java:       loadTemplate('java'),
-      javascript: loadTemplate('javascript'),
-      html:       loadTemplate('html'),
-      css:        loadTemplate('css')
-    };
+// ── Load templates ─────────────────────────────────────────────────────────
+function loadTpl(lang){
+  const el=document.getElementById('T-'+lang);
+  return el ? JSON.parse(el.textContent).code : '';
+}
+const LANGS = ['c','cpp','python','java','javascript','html','css'];
+const templates = {};
+LANGS.forEach(l => { templates[l] = loadTpl(l); });
 
-    // ── DOM refs ──────────────────────────────────────────────
-    const editor        = document.getElementById('editor');
-    const output        = document.getElementById('output');
-    const runBtn        = document.getElementById('run-btn');
-    const clearBtn      = document.getElementById('clear-btn');
-    const resetBtn      = document.getElementById('reset-btn');
-    const copyBtn       = document.getElementById('copy-btn');
-    const clearOutputBtn= document.getElementById('clear-output');
-    const themeBtn      = document.getElementById('theme-btn');
-    const aiAssistBtn   = document.getElementById('ai-assist');
-    const robotShell    = document.getElementById('robot-shell');
-    const langButtons   = document.querySelectorAll('.lang-btn');
+// ── WandBox compiler map (C / C++ / Java) ──────────────────────────────────
+const WANDBOX = {
+  c:    { compiler:'gcc-head',  options:'' },
+  cpp:  { compiler:'gcc-head',  options:'c++17' },
+  java: { compiler:'openjdk-head', options:'' }
+};
 
-    let currentLanguage = 'c';
-    editor.value = templates.c.code;
+// ── DOM refs ───────────────────────────────────────────────────────────────
+const editor      = document.getElementById('editor');
+const output      = document.getElementById('output');
+const runBtn      = document.getElementById('run-btn');
+const clearBtn    = document.getElementById('clear-btn');
+const resetBtn    = document.getElementById('reset-btn');
+const copyBtn     = document.getElementById('copy-btn');
+const clearOutBtn  = document.getElementById('clear-out-btn');
+const stdinBox     = document.getElementById('stdin-box');
+const clearStdinBtn= document.getElementById('clear-stdin-btn');
+const aiBtn       = document.getElementById('ai-assist-btn');
+const robotShell  = document.getElementById('robot-shell');
+const langBtns    = document.querySelectorAll('.lang-btn');
+const pyStatus    = document.getElementById('pyodide-status');
 
-    // ── Language switcher ─────────────────────────────────────
-    langButtons.forEach(btn => {
-      btn.addEventListener('click', function () {
-        langButtons.forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        currentLanguage = this.getAttribute('data-lang');
-        editor.value = templates[currentLanguage].code;
-        output.innerHTML = '';
-      });
-    });
+let currentLang = 'c';
+let pyodide     = null;   // loaded lazily
 
-    // ── Run Code ──────────────────────────────────────────────
-    function runCode() {
-      const code = editor.value.trim();
-      if (!code) {
-        output.innerHTML = '<span class="status-error"><i class="fas fa-exclamation-circle"></i> No code to run!</span>';
-        return;
+editor.value = templates.c;
+
+// ── Language switching ─────────────────────────────────────────────────────
+langBtns.forEach(btn => {
+  btn.addEventListener('click', function(){
+    langBtns.forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    currentLang  = this.dataset.lang;
+    editor.value = templates[currentLang];
+    output.innerHTML = '';
+  });
+});
+
+// ── Tab key ───────────────────────────────────────────────────────────────
+editor.addEventListener('keydown', e => {
+  if(e.key === 'Tab'){
+    e.preventDefault();
+    const s = editor.selectionStart;
+    editor.value = editor.value.slice(0,s)+'    '+editor.value.slice(editor.selectionEnd);
+    editor.selectionStart = editor.selectionEnd = s+4;
+  }
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setOut(html){ output.innerHTML = html; }
+function setBusy(on){
+  runBtn.disabled = on;
+  robotShell.classList.toggle('executing', on);
+}
+
+// ── Pyodide loader ─────────────────────────────────────────────────────────
+async function ensurePyodide(){
+  if(pyodide) return pyodide;
+  setOut('<span class="s-warn"><i class="fas fa-spinner fa-spin"></i> Loading Python engine… (first time only, ~5 sec)</span>');
+  pyodide = await loadPyodide();
+  pyStatus.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i> <span style="color:var(--success)">Python engine ready!</span>';
+  return pyodide;
+}
+
+// Start loading Pyodide in the background immediately
+loadPyodide().then(py => {
+  pyodide = py;
+  pyStatus.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success)"></i> <span style="color:var(--success)">Python engine ready!</span>';
+}).catch(() => {
+  pyStatus.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i> <span style="color:var(--danger)">Python engine failed to load (check internet)</span>';
+});
+
+// ── Main run ───────────────────────────────────────────────────────────────
+async function runCode(){
+  const code = editor.value.trim();
+  if(!code){
+    setOut('<span class="s-err"><i class="fas fa-exclamation-circle"></i> No code to run!</span>');
+    return;
+  }
+  setOut('<span class="s-run"><i class="fas fa-cog fa-spin"></i> Running your code…</span>');
+  setBusy(true);
+
+  try {
+    switch(currentLang){
+
+      case 'javascript': {
+        const logs=[], orig=console.log;
+        console.log = (...a) => {
+          logs.push(a.map(x=>typeof x==='object'?JSON.stringify(x,null,2):String(x)).join(' '));
+          orig.apply(console,a);
+        };
+        try{ eval(code); } catch(e){ logs.push('Error: '+e.message); }
+        finally{ console.log=orig; }
+        setOut('<span class="s-ok"><i class="fas fa-check-circle"></i> Executed successfully!</span>\n\n'+
+               esc(logs.join('\n')||'(no output)'));
+        break;
       }
 
-      output.innerHTML = '<span class="status-executing"><i class="fas fa-cog fa-spin"></i> Executing code...</span>';
-      robotShell.classList.add('executing');
+      case 'html': {
+        output.innerHTML='';
+        const fr=document.createElement('iframe');
+        output.appendChild(fr);
+        const doc=fr.contentDocument||fr.contentWindow.document;
+        doc.open(); doc.write(code); doc.close();
+        break;
+      }
 
-      setTimeout(() => {
-        try {
-          if (currentLanguage === 'html') {
-            // Render HTML in an iframe
-            output.innerHTML = '';
-            const iframe = document.createElement('iframe');
-            output.appendChild(iframe);
-            const doc = iframe.contentDocument || iframe.contentWindow.document;
-            doc.open();
-            doc.write(code);
-            doc.close();
+      case 'css': {
+        output.innerHTML='';
+        const fr=document.createElement('iframe');
+        output.appendChild(fr);
+        const doc=fr.contentDocument||fr.contentWindow.document;
+        doc.open();
+        doc.write('<!DOCTYPE html><html><head><style>'+code+
+          '</style></head><body style="margin:0;background:#0d0d12;">'+
+          '<div class="card"><h2>CSS Preview</h2><p>Styles applied live.</p>'+
+          '<button class="btn">Hover Me</button></div></body></html>');
+        doc.close();
+        break;
+      }
 
-          } else if (currentLanguage === 'javascript') {
-            // Execute JS and capture console.log
-            const logs = [];
-            const origLog = console.log;
-            console.log = (...args) => {
-              logs.push(args.map(a =>
-                typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
-              ).join(' '));
-              origLog.apply(console, args);
-            };
-            try {
-              // eslint-disable-next-line no-eval
-              eval(code);
-            } finally {
-              console.log = origLog;
-            }
-            output.innerHTML =
-              '<span class="status-success"><i class="fas fa-check-circle"></i> Executed successfully!</span>\n\n' +
-              escapeHtml(logs.join('\n') || '(no output)');
-
-          } else if (currentLanguage === 'css') {
-            // Render CSS preview
-            output.innerHTML = '';
-            const iframe = document.createElement('iframe');
-            output.appendChild(iframe);
-            const doc = iframe.contentDocument || iframe.contentWindow.document;
-            doc.open();
-            doc.write(
-              '<!DOCTYPE html><html><head><style>' + code +
-              '</style></head><body style="margin:0;background:#0d0d12;">' +
-              '<div class="box"><h2>CSS Preview</h2><p>Hover over the button below.</p>' +
-              '<button class="btn">Hover Me</button></div></body></html>'
-            );
-            doc.close();
-
+      case 'python': {
+        // Runs 100% in browser via WebAssembly — no network call!
+        const py = await ensurePyodide();
+        let stdout='', stderr='';
+        py.setStdout({ batched: s => { stdout += s+'\n'; } });
+        py.setStderr({ batched: s => { stderr += s+'\n'; } });
+        // Feed stdin lines to Python's input()
+        const stdinLines = stdinBox.value.split('\n');
+        let stdinIdx = 0;
+        py.globals.set('_stdin_lines', py.toPy(stdinLines));
+        py.runPython(`
+import builtins as _b
+_lines = list(_stdin_lines)
+_idx = [0]
+def _fake_input(prompt=''):
+    import sys
+    if prompt:
+        sys.stdout.write(prompt)
+    if _idx[0] < len(_lines):
+        val = _lines[_idx[0]]; _idx[0]+=1; return val
+    return ''
+_b.input = _fake_input
+        `);
+        try{
+          await py.runPythonAsync(code);
+          const out = (stdout||'').trim();
+          if(stderr.trim()){
+            setOut('<span class="s-err"><i class="fas fa-times-circle"></i> Error:</span>\n\n'+esc(stderr.trim()));
           } else {
-            // Simulated output for C, C++, Python, Java
-            const tplOut = templates[currentLanguage].output;
-            output.innerHTML =
-              '<span class="status-success"><i class="fas fa-check-circle"></i> Code executed successfully!</span>\n\n' +
-              escapeHtml(tplOut);
+            setOut('<span class="s-ok"><i class="fas fa-check-circle"></i> Executed successfully!</span>\n\n'+
+                   esc(out||'(no output)'));
           }
-        } catch (err) {
-          output.innerHTML =
-            '<span class="status-error"><i class="fas fa-exclamation-circle"></i> Error: ' +
-            escapeHtml(err.message) + '</span>';
+        } catch(e){
+          setOut('<span class="s-err"><i class="fas fa-times-circle"></i> Error:</span>\n\n'+esc(e.message));
         }
-        robotShell.classList.remove('executing');
-      }, 1200);
+        break;
+      }
+
+      default:
+        // C, C++, Java → WandBox free compiler API
+        await runViaWandBox(code, currentLang);
     }
+  } catch(err){
+    setOut('<span class="s-err"><i class="fas fa-exclamation-circle"></i> '+esc(err.message)+'</span>');
+  }
 
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
+  setBusy(false);
+}
 
-    // ── Editor utilities ──────────────────────────────────────
-    function clearEditor()  { editor.value = ''; }
-    function resetEditor()  { editor.value = templates[currentLanguage].code; output.innerHTML = ''; }
-    function clearOutput()  { output.innerHTML = ''; }
+// ── WandBox API ────────────────────────────────────────────────────────────
+async function runViaWandBox(code, lang){
+  const cfg = WANDBOX[lang];
 
-    function copyCode() {
-      navigator.clipboard.writeText(editor.value).then(() => {
-        const orig = copyBtn.innerHTML;
-        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-        setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
-      });
-    }
-
-    function aiAssist() {
-      output.innerHTML = '<span class="status-executing"><i class="fas fa-robot fa-spin"></i> AI is analysing your code...</span>';
-      setTimeout(() => {
-        const tips = [
-          "Consider adding error handling for edge cases.",
-          "Your code structure looks solid — try adding inline comments.",
-          "Optimise your loops: precompute constants outside the loop body.",
-          "Use more descriptive variable names for better readability.",
-          "Break long functions into smaller, focused helper functions."
-        ];
-        const tip = tips[Math.floor(Math.random() * tips.length)];
-        output.innerHTML =
-          '<span class="status-success"><i class="fas fa-lightbulb"></i> AI Suggestion:</span>\n\n' +
-          tip + '\n\n<span style="color:var(--muted);font-size:0.85em">AI is continuously learning from your coding patterns.</span>';
-      }, 2000);
-    }
-
-    // ── Event listeners ────────────────────────────────────────
-    runBtn.addEventListener('click', runCode);
-    clearBtn.addEventListener('click', clearEditor);
-    resetBtn.addEventListener('click', resetEditor);
-    copyBtn.addEventListener('click', copyCode);
-    clearOutputBtn.addEventListener('click', clearOutput);
-    aiAssistBtn.addEventListener('click', aiAssist);
-    themeBtn.addEventListener('click', () => {
-      output.innerHTML = '<span class="status-executing">🎨 Theme customisation coming soon!</span>';
+  let res;
+  try {
+    res = await fetch('https://wandbox.org/api/compile.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code:     code,
+        compiler: cfg.compiler,
+        options:  cfg.options,
+        stdin:    stdinBox.value
+      })
     });
+  } catch(e){
+    setOut(
+      '<span class="s-err"><i class="fas fa-wifi"></i> Network error — WandBox unreachable.</span>\n\n' +
+      'This usually means:\n' +
+      '  1. No internet connection\n' +
+      '  2. wandbox.org is temporarily down\n\n' +
+      '<span style="color:var(--muted)">Tip: JavaScript, HTML, CSS and Python all work offline!</span>'
+    );
+    return;
+  }
 
-    // Robot bounce on output change
-    const observer = new MutationObserver(() => {
-      robotShell.animate([
-        { transform: 'translate(-50%,-50%) translateY(0)' },
-        { transform: 'translate(-50%,-50%) translateY(-8px)' },
-        { transform: 'translate(-50%,-50%) translateY(0)' }
-      ], { duration: 500, iterations: 1 });
-    });
-    observer.observe(output, { childList: true, subtree: false });
+  if(!res.ok){
+    setOut('<span class="s-err"><i class="fas fa-times-circle"></i> WandBox error: '+res.status+'</span>');
+    return;
+  }
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.querySelectorAll('.robot-3d').forEach(r => r.style.animation = 'none');
-      document.querySelectorAll('.blob').forEach(b => b.style.animation = 'none');
-    }
-  </script>
+  const data = await res.json();
+
+  // WandBox returns compiler_error and program_output
+  const compileErr = (data.compiler_error  || '').trim();
+  const programOut = (data.program_output  || '').trim();
+  const programErr = (data.program_error   || '').trim();
+
+  if(compileErr){
+    setOut('<span class="s-err"><i class="fas fa-times-circle"></i> Compile Error:</span>\n\n'+esc(compileErr));
+  } else if(programErr && !programOut){
+    setOut('<span class="s-err"><i class="fas fa-times-circle"></i> Runtime Error:</span>\n\n'+esc(programErr));
+  } else {
+    setOut('<span class="s-ok"><i class="fas fa-check-circle"></i> Executed successfully!</span>\n\n'+
+           esc(programOut||'(no output)'));
+  }
+}
+
+// ── Utility buttons ────────────────────────────────────────────────────────
+clearBtn.addEventListener('click', () => { editor.value=''; });
+resetBtn.addEventListener('click', () => { editor.value=templates[currentLang]; output.innerHTML=''; });
+clearOutBtn.addEventListener('click', () => { output.innerHTML=''; });
+clearStdinBtn.addEventListener('click', () => { stdinBox.value=''; });
+copyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(editor.value).then(() => {
+    const orig = copyBtn.innerHTML;
+    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    setTimeout(()=>{ copyBtn.innerHTML=orig; }, 2000);
+  });
+});
+aiBtn.addEventListener('click', () => {
+  window.open('assistant.html', '_blank');
+});
+runBtn.addEventListener('click', () => runCode());
+
+// ── Robot bounce ───────────────────────────────────────────────────────────
+new MutationObserver(() => {
+  robotShell.animate([
+    {transform:'translate(-50%,-50%) translateY(0)'},
+    {transform:'translate(-50%,-50%) translateY(-9px)'},
+    {transform:'translate(-50%,-50%) translateY(0)'}
+  ], {duration:460});
+}).observe(output, {childList:true});
+
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  document.querySelectorAll('.robot-3d,.blob').forEach(el=>el.style.animation='none');
+</script>
 </body>
 </html>
