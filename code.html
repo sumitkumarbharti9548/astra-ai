@@ -349,12 +349,37 @@ const LANGS = ['c','cpp','python','java','javascript','html','css'];
 const templates = {};
 LANGS.forEach(l => { templates[l] = loadTpl(l); });
 
-// ── WandBox compiler map (C / C++ / Java) ──────────────────────────────────
+// ── WandBox compiler map (C / C++) ─────────────────────────────────────────
 const WANDBOX = {
-  c:    { compiler:'gcc-head',  options:'' },
-  cpp:  { compiler:'gcc-head',  options:'c++17' },
-  java: { compiler:'openjdk-head', options:'' }
+  c:   { compiler:'gcc-head', options:'' },
+  cpp: { compiler:'gcc-head', options:'c++17' }
 };
+
+// ── Java compiler: fetch live list from WandBox and pick best available ─────
+let javaCompiler = 'openjdk-jdk-21.0.0';   // safe fallback
+const JAVA_FALLBACKS = [
+  'openjdk-jdk-21.0.0','openjdk-jdk-17+35','openjdk-head',
+  'openjdk-jdk-15-ea+14','java','openjdk-jdk-13'
+];
+
+(async () => {
+  try {
+    const r = await fetch('https://wandbox.org/api/list.json');
+    if (!r.ok) return;
+    const list = await r.json();
+    // Pick the first compiler whose name contains 'openjdk' or 'java'
+    const jc = list.find(c =>
+      c.language && c.language.toLowerCase().includes('java') &&
+      c.name
+    );
+    if (jc) {
+      javaCompiler = jc.name;
+      console.log('Java compiler selected:', javaCompiler);
+    }
+  } catch(e) {
+    console.warn('Could not fetch WandBox compiler list, using fallback:', javaCompiler);
+  }
+})();
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 const editor      = document.getElementById('editor');
@@ -521,34 +546,51 @@ _b.input = _fake_input
 }
 
 // ── WandBox API ────────────────────────────────────────────────────────────
+async function wandboxCompile(compiler, options, code){
+  return fetch('https://wandbox.org/api/compile.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      code, compiler, options, stdin: stdinBox.value
+    })
+  });
+}
+
 async function runViaWandBox(code, lang){
-  const cfg = WANDBOX[lang];
+  // For Java: try dynamic compiler first, then fallbacks
+  const isJava = lang === 'java';
+  const compilerList = isJava
+    ? [javaCompiler, ...JAVA_FALLBACKS.filter(f => f !== javaCompiler)]
+    : [WANDBOX[lang].compiler];
+  const options = isJava ? '' : WANDBOX[lang].options;
 
   let res;
-  try {
-    res = await fetch('https://wandbox.org/api/compile.json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code:     code,
-        compiler: cfg.compiler,
-        options:  cfg.options,
-        stdin:    stdinBox.value
-      })
-    });
-  } catch(e){
-    setOut(
-      '<span class="s-err"><i class="fas fa-wifi"></i> Network error — WandBox unreachable.</span>\n\n' +
-      'This usually means:\n' +
-      '  1. No internet connection\n' +
-      '  2. wandbox.org is temporarily down\n\n' +
-      '<span style="color:var(--muted)">Tip: JavaScript, HTML, CSS and Python all work offline!</span>'
-    );
-    return;
+  for (const compiler of compilerList) {
+    try {
+      setOut('<span class="s-run"><i class="fas fa-cog fa-spin"></i> Compiling with ' + compiler + '…</span>');
+      res = await wandboxCompile(compiler, options, code);
+      if (res.ok) {
+        if (isJava) javaCompiler = compiler; // cache working compiler
+        break;
+      }
+      if (res.status !== 500) break; // only retry on 500
+    } catch(e) {
+      setOut(
+        '<span class="s-err"><i class="fas fa-wifi"></i> Network error — WandBox unreachable.</span>\n\n' +
+        'This usually means:\n' +
+        '  1. No internet connection\n' +
+        '  2. wandbox.org is temporarily down\n\n' +
+        '<span style="color:var(--muted)">Tip: JavaScript, HTML, CSS and Python all work offline!</span>'
+      );
+      return;
+    }
   }
 
-  if(!res.ok){
-    setOut('<span class="s-err"><i class="fas fa-times-circle"></i> WandBox error: '+res.status+'</span>');
+  if (!res || !res.ok) {
+    setOut(
+      '<span class="s-err"><i class="fas fa-times-circle"></i> WandBox could not compile Java right now.</span>\n\n' +
+      'Try again in a moment, or use the <strong>Python</strong> tab instead — Python also supports BigInteger math natively.'
+    );
     return;
   }
 
